@@ -1,0 +1,75 @@
+[
+  {
+    "author": [
+      {
+        "family": "Moggi",
+        "given": "Eugenio"
+      }
+    ],
+    "container-title": "Information and Computation",
+    "id": "Mog89",
+    "issue": "1",
+    "issued": {
+      "date-parts": [
+        [
+          1991
+        ]
+      ]
+    },
+    "note": "Selections from 1989 IEEE Symposium on Logic in Computer Science",
+    "page": "55-92",
+    "title": "Notions of computation and monads (Selections from 1989 IEEE Symposium on Logic in Computer Science)",
+    "type": "article-journal",
+    "volume": "93"
+  },
+  {
+    "DOI": "10.1145/91556.91592",
+    "ISBN": "089791368X",
+    "URL": "https://doi.org/10.1145/91556.91592",
+    "abstract": "Category theorists invented monads in the 1960’s to concisely express certain aspects of universal algebra. Functional programmers invented list comprehensions in the 1970’s to concisely express certain programs involving lists. This paper shows how list comprehensions may be generalised to an arbitrary monad, and how the resulting programming feature can concisely express in a pure functional language some programs that manipulate state, handle exceptions, parse text, or invoke continuations. A new solution to the old problem of destructive array update is also presented. No knowledge of category theory is assumed.",
+    "author": [
+      {
+        "family": "Wadler",
+        "given": "Philip"
+      }
+    ],
+    "collection-title": "LFP ’90",
+    "container-title": "Proceedings of the 1990 ACM conference on LISP and functional programming",
+    "id": "Wad90",
+    "issued": {
+      "date-parts": [
+        [
+          1990
+        ]
+      ]
+    },
+    "page": "61-78",
+    "title": "Comprehending monads",
+    "type": "paper-conference"
+  },
+  {
+    "DOI": "10.1145/143165.143169",
+    "ISBN": "0897914538",
+    "URL": "https://doi.org/10.1145/143165.143169",
+    "abstract": "This paper explores the use monads to structure functional programs. No prior knowledge of monads or category theory is required.Monads increase the ease with which programs may be modified. They can mimic the effect of impure features such as exceptions, state, and continuations; and also provide effects not easily achieved with such features. The types of a program reflect which effects occur.The first section is an extended example of the use of monads. A simple interpreter is modified to support various extra features: error messages, state, output, and non-deterministic choice. The second section describes the relation between monads and the continuation-passing style. The third section sketches how monads are used in a compiler for Haskell that is written in Haskell.",
+    "author": [
+      {
+        "family": "Wadler",
+        "given": "Philip"
+      }
+    ],
+    "collection-title": "POPL ’92",
+    "container-title": "Proceedings of the 19th ACM SIGPLAN-SIGACT symposium on principles of programming languages",
+    "id": "Wad92",
+    "issued": {
+      "date-parts": [
+        [
+          1992
+        ]
+      ]
+    },
+    "page": "1-14",
+    "title": "The essence of functional programming",
+    "type": "paper-conference"
+  }
+]
