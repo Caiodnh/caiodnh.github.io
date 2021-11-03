@@ -26,7 +26,7 @@ This metaphor came to us after looking different sources to try to have a better
 
 * We are introducing our monad as machine metaphor;
 * We are adapting the code to the current way Haskell is written;
-* We prefer to introduce the monad class via the *join* function rather than *bind*, but we go back to the [standard way](#def-with-bind) as fast as possible;
+* We prefer to introduce the Monad class via the *join* function rather than *bind*, but we go back to the [standard way](#def-with-bind) as fast as possible; to this end, we create the [class `Machine`](#monads-as-machines)
 * We do not follow the full paper, only the first few sections, which are the ones that explain monads. We also changed the order of the examples presented, because we believe some are more [important](#main-examples) than [others](#more-examples). 
 
 Let's start with an excerpt of that paper's introduction: 
@@ -48,45 +48,34 @@ We will now introduce monads both formally and informally.
 
 We believe many readers tried to understand monads before and, hence, know a couple of examples. Well, it is better to keep these previously know examples at bay for now, so they don't mess up with the intuitions we are trying to build up in this section. Most of all, the list monad may seem very unrelated, but we will [get back to it](#main-examples).
 
-## The monad class {#monads-as-machines}
+## The `Machine` class {#monads-as-machines}
 
-As we said above, we chose to differ from the usual way that Haskell does, because we believe this other (well-known) approach makes it easier to understand. The way that is currently done in Haskell will be presented [soon after](#def-with-bind), so we do not lose touch with reality.
-
-A price to pay for this, is that we have hide part of the `Prelude`, so we use the `NoImplicitPrelude` extension. We also use other two not verry important language extensions only for convenience when writing our [examples](#main-examples).
+As we said above, we chose to differ from the usual way that Haskell does, because we believe this other (well-known) approach makes it easier to understand. To not mess things up and redefine the `Monad` class, and also to reinforce our analogy, we will define a class called `Machine`. We will add an "_" to the name of the functions in this class to avoid conflicts.
 
 ```haskell
-{-\# LANGUAGE NoImplicitPrelude, InstanceSigs, FlexibleInstances #-}
-
-import Prelude hiding (Functor, Monad, fmap, return, (>>=), lookup)
+class Machine m where
+  return_ :: a ->  m a
+  join_ :: m (m a) -> m a
+  fmap_ :: (a -> b) -> m a -> m b
 ```
 
-Ok, now we are ready to define the `Monad` class:
+The idea behind is the following: 
 
-COMENTÁRIO: Talvez devesse ser uma `Machine` class e depois definir mônadas a partir dela? Mas para isso a gente teria que escrever `returnM`, `joinM` e `fmapM`. Enfim, fica a dúvida.
+While an element in `Integer` represents an integer for Haskell, an element in `m Integer` represents an integer written in the machine's code.
 
-```haskell
-class Monad m where
-  return :: a ->  m a
-  join :: m (m a) -> m a
-  fmap :: (a -> b) -> m a -> m b
-```
+The function `return_` simply translates a value in Haskell to the same value written in machine code, e.g., if we take `2 :: Integer`, then `return_ 2 :: m Integer` is the way the machine represents the integer `2`. 
 
-The intuition behind is that monads represent machines that can perform computations differently from the standard way Haskell would. 
+Of course, this works for any of Haskell's types, not only `Integer`. For every type `a`, there is a type `m a` that consists in the way the machine represents the elements of `a`. Since `m a` is itself an type in Haskell, there is an type `m (m a)`. The values with this type are "machine codes written in machine code". Of course, this should be redundant: the machine should be able to emulate itself. And that is what the function `join_` does.
 
-`return`: Any haskell value, of any type, can be interpreted as a value written in the machine's "internal representation" of that type.
+Finally, Haskell functions can be used to handle machine code. Given a function `f` with signature `a -> b`, there is a corresponding function that transform machine codes representing values of type `a` to machine codes representing values of type `b`.
 
-`join`: It is easy for the machine to "emulate itself": if we have a "machine code written in machine code," the machine can remove one of the layers and see it as simply "machine code."
+We will refer to a value with type `m a` as an *monadic value* for short. Something important that we need to say is that, in general, not every monadic value can be constructed using `return_`. An element of type `m Integer`, for instance, is something that is a integer for the standards of the machine `m`. It could be something like "whatever integer is in this position of the memory when I read it," or "an integer that will be typed by the user," or "some computation that, if nothing goes wrong, will end up being an integer." We can think that the `return_ 2` means something like "the most basic representation the machine can have for the integer 2", or "the pure integer 2" or even "the constant integer 2."
 
-`fmap`: Any "vanilla" Haskell function can be translated into a function that deals with values written in "machine code."
-
-For an instance of this class be called a monad, there are laws that are expected to be valid. They are very natural with this machine metaphor. For example, one would expect that if we have a value `x` with type `m a` for some `a` (these are called *monadic values*), then `join (return x) = x` (in other words, that if we take something already in machine code and write it in machine code again, well, the machine can ignore this second layer). As another example, now for any value `x :: a` and any function `f :: a -> b` , one would expect that `fmap f (return x)` should be the same as `return (f x)` (performing a computation out of the machine, if possible, is compatible with performing it inside). We will postpone listing all the laws for another moment, to avoid losing our focus (see http://xenon.stanford.edu/~hwatheod/monads.html).
-
-While an element of type `Int` is what Haskell calls an integer, an element of type `m Int` is what the machine calls an integer. Starting from the `2 :: Int`, we then have that `return 2 :: m Int` is a representation of the integer 2. But, and this is an important point, the machine can have elements of type `m Int` which are not achivable via `return`. One machine could call as an `m Int` something like "whatever integer is in this position of the memory when I read it," or "an integer that will be typed by the user," or "something that, if nothing goes wrong, will end up being an integer." We can say that the `return 2` means something like "the most basic representation the machine can have for the integer 2", or "the pure integer 2" or even "the constant integer 2." We will see different examples of monads shortly, so this will get clearer, but for now the goal is still to develop an intuition of what a monad is in general terms.
-
-From what we just said, it is not surprising that, in general, one cannot read a what it is inside an `m a` and put it back in the vanilla type `a`. Once a value enters the machine, it will be in the machine forever (well, there are exceptions, but that is usually the case). In the examples we will show below, there is a `show` function with signature `show :: m a -> String`, so at least we can see what is going on, but not even this is necessary.
-
+Having said all that, there are also laws that we want the functions in the `Machine` class to follow. For example, one would expect that if we have a value `x` with type `m a` for some `a` (these are called *monadic values*), then `join (return x) = x` (in other words, that if we take something already in machine code and simply write it in machine code again, well, the machine can ignore this second layer). As another example, now for any value `x :: a` and any function `f :: a -> b` , one would expect that `fmap f (return x)` should be the same as `return (f x)` (performing a computation out of the machine, if possible, is compatible with performing it inside). We will postpone listing all the laws for another moment, to avoid losing our focus (see [this link](http://xenon.stanford.edu/~hwatheod/monads.html) for now).
 
 ## Monadic functions and bind
+
+From what we just said, it is not surprising that, in general, one cannot read a what it is inside an `m a` and put it back in the vanilla type `a`. Once a value enters the machine, it will be in the machine forever (well, there are exceptions, but that is usually the case). In the examples we will show below, there is a `show` function with signature `show :: m a -> String`, so at least we can see what is going on, but not even this is necessary.
 
 Most of the time, we communicate with a machine using functions that read "vanilla" values but produce values in "machine code", e.g., functions with signature `a -> m b` or `a -> b -> m c` in opposition to functions with signature `a -> b` or `a -> b -> c`. We will call these *monadic functions*. These are easy to write, since, again, we know how to put vanilla values into the machine but not the reverse.
 
