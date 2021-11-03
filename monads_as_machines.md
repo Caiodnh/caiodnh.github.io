@@ -26,7 +26,7 @@ This metaphor came to us after looking different sources to try to have a better
 
 * We are introducing our monad as machine metaphor;
 * We are adapting the code to the current way Haskell is written;
-* We prefer to introduce the Monad class via the *join* function rather than *bind*, but we go back to the [standard way](#def-with-bind) as fast as possible; to this end, we create the [class `Machine`](#monads-as-machines)
+* We prefer to introduce the Monad class via the *join* function rather than *bind*, but we go back to the [standard way](#def-with-bind) as fast as possible; to this end, we create the [`Machine` class](#monads-as-machines)
 * We do not follow the full paper, only the first few sections, which are the ones that explain monads. We also changed the order of the examples presented, because we believe some are more [important](#main-examples) than [others](#more-examples). 
 
 Let's start with an excerpt of that paper's introduction: 
@@ -81,20 +81,58 @@ Most of the time, we communicate with a machine using functions that read "vanil
 
 (Formally speaking, we can define a *monadic function signature* to be any type `a -> x` where x is either of the form `m b` or it is, recursively, a monadic function signature.)
 
-A very common situation is when we have a monadic value with type `m a`, for some `a` and want to pass it to a monadic function of type `a -> m b`. How could we do it? Well, we can't remove the `a` from inside the `m a`, but we can use the ability of the machine to "emulate itself!" The strategy is the following: we first use the `fmap` on our monadic function to get something with type `m a -> m (m b)`; we then it apply to our monadic value and get something with type `m (m b)`; finally, we resolve the redundancy of having an extra `m` by applying `join`. In other words, we use:
+A very common situation is when we have a monadic value with type `m a` and want to pass it to a monadic function with type `a -> m b`. How could we do it? Well, we can't remove the `a` from inside the `m a`, but we can use the ability of the machine to "emulate itself!" The strategy is the following: we first use the `fmap_` on our monadic function to get something with type `m a -> m (m b)`; we then it apply to our monadic value and get something with type `m (m b)`; finally, we resolve the redundancy of having an extra `m` by applying `join`. In other words, we use:
 
 ```haskell
-(>>=) :: (Monad m) => m a -> (a -> m b) -> m b
-m_val >>= m_func = join (fmap m_func m_val)
+bind_ :: (Machine m) => m a -> (a -> m b) -> m b
+m_val >>= m_func = join_ (fmap_ m_func m_val)
 ```
 
-This function is called *bind*. It is so powerful that we could have used it and `return` to define `join` and `fmap` instead of how we did. Actually, the default definition of the monad class in Haskell, which we avoided above, is using `return` and `(>>=)`! At this point, we could go back and remove the `{-# LANGUAGE NoImplicitPrelude #-}` and the `import Prelude hiding` but, still, we believe would make our machine metaphor more obscure. 
+This function is called *bind*. It is so powerful that we could have used it and `return_` to define `join_` and `fmap_` instead of how we did. Actually, that is the [default way in Haskell](#def-with-bind).
 
-By design, bind doesn't follow the usual function application notation, `f x`, with the function on the left and the value on the right. And,indeed, there is a function `(=<<)` which follows this convention. But `(>>=)` is more common because it follows the order things usually happen: we have a value, then apply a function, get another value, pass it to another function, etc. This sequencing is something that agrees with the way many "machines" actually work.
+By design, bind doesn't follow the usual function application notation, `f x`, with the function on the left and the value on the right. And, of course, there is a function in Haskell which follows the function application convention. But `bind_` is more common because it follows the order things usually happen: we have a value, then apply a function, get another value, pass it to another function, etc. This sequencing is something that agrees with the way many "machines" actually work.
 
-Another strange thing is this name "bind". The intuition is that, although we can't read the internal value an `m a`, we can "bind its value" to the variable that we pass to the function `a -> m b`. This intuition will make more sense when we work with the *do notation*. But, we had enough general considerations. Let's put our hands on an example.
+Another strange thing is this name "bind". The intuition is that, although we can't read the internal value an `m a`, we can "bind its value" to the variable that we pass to the function `a -> m b`. To explain it better, let us "translate" two examples into words.
+
+The first is very simple: suppose we have an integer in machine code, i.e., an value `m_x` with type `m Integer` and we want to pass it to the function `\x -> return (x + 1)`, which has type `Integer -> m Integer`. We do
+```haskell
+m_x `bind_` (\x -> return_ (x + 1))
+```
+which can be read as "Let `x` be the integer encoded by `m_x`. Add `1` to `x` and return the result to the machine."
+
+For an harder example, we will define the function `ap_`, which corresponds to the function `ap` in `Control.Monad`. This function receives an "encoded" function `m_f` and an "encoded" value `m_x` and gives us the "machine code" of the value we would get by applying the function to the value:
+```haskell
+ap_ m_f m_x = m_f `bind_` (\f -> m_x `bind_` (\x -> return (f x)))
+```
+which can be read as "Let `f` be the function encoded by `m_f`. Then let `x` be the value encoded by `m_x`. Then compute `f x` and return the resulting value to the machine."
+
+If it is not clear now, there is no need to overthink, since we will see more examples below. Also, it is worth to say that this interpretation of `bind_` will get more explicit with the *do notation*.
 
 ## Back to reality: how Haskell do it {#def-with-bind}
+
+The moment to translate `Machine` to the way that the `Monad` class currently defined in Haskell has finally arrived! It has some layers: for a type constructor to have an instance of `Monad`, it needs an instance of `Applicative`, which in turn needs an instance of `Functor`.
+
+```haskell
+instance Machine m => Monad m where
+  return = return_
+  (>>=) = bind_
+
+instance Machine m => Applicative m where
+  pure = return_
+  (<*>) = ap_
+
+instance Machine m => Functor m where
+  fmap = fmap_
+```
+
+The reverse:
+
+```haskell
+instance Monad m => Machine m where
+  return_ = return
+  join_ (mm_x) = mm_x >>= id
+  fmap_ = fmap
+``` 
 
 # Concrete examples
 
@@ -170,10 +208,10 @@ type M = Id
 
 newtype Id a = Id a
 
-instance Monad Id where
-  return a = Id a
-  join (Id (Id a)) = Id a
-  fmap f (Id a) = Id (f a)
+instance Machine Id where
+  return_ a = Id a
+  join_ (Id (Id a)) = Id a
+  fmap_ f (Id a) = Id (f a)
 
 instance Show a => Show (Id a) where
   show (Id a) = show a
@@ -186,18 +224,18 @@ instance Show a => Show (Id a) where
 
 data E a = Error String | Success a 
 
-instance Monad E where
-  return :: a -> E a
-  return a = Success a
+instance Machine E where
+  return_ :: a -> E a
+  return_ a = Success a
 
-  join :: E (E a) -> E a
-  join (Success (Success a)) = Success a
-  join (Success (Error msg)) = Error msg
-  join (Error msg)           = Error msg
+  join_ :: E (E a) -> E a
+  join_ (Success (Success a)) = Success a
+  join_ (Success (Error msg)) = Error msg
+  join_ (Error msg)           = Error msg
 
-  fmap :: (a -> b) -> E a -> E b
-  fmap f (Success a) = Success (f a)
-  fmap f (Error msg) = Error msg
+  fmap_ :: (a -> b) -> E a -> E b
+  fmap_ f (Success a) = Success (f a)
+  fmap_ f (Error msg) = Error msg
 
 instance Show a => Show (E a) where
   show (Success a) = show a
@@ -218,16 +256,16 @@ apply f a = errorE ("Should be a function: " ++ show f)
 newtype StateMachine state a = SM (state -> (a, state))
 
 instance Monad (StateMachine state) where
-  return :: a -> StateMachine state a
-  return a = SM $ \s -> (a, s)
+  return_ :: a -> StateMachine state a
+  return_ a = SM $ \s -> (a, s)
   
-  join :: StateMachine state (StateMachine state a) -> StateMachine state a
-  join (SM metaMachine) = SM newMachine
+  join_ :: StateMachine state (StateMachine state a) -> StateMachine state a
+  join_ (SM metaMachine) = SM newMachine
     where
       newMachine s0 = let (SM machine, s1) = metaMachine s0 in machine s1
 
-  fmap :: (a -> b) -> StateMachine state a -> StateMachine state b
-  fmap f (SM machine) = SM newMachine
+  fmap_ :: (a -> b) -> StateMachine state a -> StateMachine state b
+  fmap_ f (SM machine) = SM newMachine
     where
       newMachine s0 = let (a, s1) = machine s0 in (f a, s1)
 ```
@@ -235,8 +273,6 @@ instance Monad (StateMachine state) where
 More stuff:
 
 ```haskell
-
-
 -- instance for show only for the case the `state` is taken to be Int
 
 type CountingMachine = StateMachine Int

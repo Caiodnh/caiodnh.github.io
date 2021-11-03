@@ -265,7 +265,7 @@
 <ul>
 <li>We are introducing our monad as machine metaphor;</li>
 <li>We are adapting the code to the current way Haskell is written;</li>
-<li>We prefer to introduce the Monad class via the <em>join</em> function rather than <em>bind</em>, but we go back to the <a href="#def-with-bind">standard way</a> as fast as possible; to this end, we create the <a href="#monads-as-machines">class <code>Machine</code></a></li>
+<li>We prefer to introduce the Monad class via the <em>join</em> function rather than <em>bind</em>, but we go back to the <a href="#def-with-bind">standard way</a> as fast as possible; to this end, we create the <a href="#monads-as-machines"><code>Machine</code> class</a></li>
 <li>We do not follow the full paper, only the first few sections, which are the ones that explain monads. We also changed the order of the examples presented, because we believe some are more <a href="#main-examples">important</a> than <a href="#more-examples">others</a>.</li>
 </ul>
 <p>Let’s start with an excerpt of that paper’s introduction:</p>
@@ -296,147 +296,168 @@
 <p>From what we just said, it is not surprising that, in general, one cannot read a what it is inside an <code>m a</code> and put it back in the vanilla type <code>a</code>. Once a value enters the machine, it will be in the machine forever (well, there are exceptions, but that is usually the case). In the examples we will show below, there is a <code>show</code> function with signature <code>show :: m a -&gt; String</code>, so at least we can see what is going on, but not even this is necessary.</p>
 <p>Most of the time, we communicate with a machine using functions that read “vanilla” values but produce values in “machine code,” e.g., functions with signature <code>a -&gt; m b</code> or <code>a -&gt; b -&gt; m c</code> in opposition to functions with signature <code>a -&gt; b</code> or <code>a -&gt; b -&gt; c</code>. We will call these <em>monadic functions</em>. These are easy to write, since, again, we know how to put vanilla values into the machine but not the reverse.</p>
 <p>(Formally speaking, we can define a <em>monadic function signature</em> to be any type <code>a -&gt; x</code> where x is either of the form <code>m b</code> or it is, recursively, a monadic function signature.)</p>
-<p>A very common situation is when we have a monadic value with type <code>m a</code>, for some <code>a</code> and want to pass it to a monadic function of type <code>a -&gt; m b</code>. How could we do it? Well, we can’t remove the <code>a</code> from inside the <code>m a</code>, but we can use the ability of the machine to “emulate itself!” The strategy is the following: we first use the <code>fmap</code> on our monadic function to get something with type <code>m a -&gt; m (m b)</code>; we then it apply to our monadic value and get something with type <code>m (m b)</code>; finally, we resolve the redundancy of having an extra <code>m</code> by applying <code>join</code>. In other words, we use:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ot">(&gt;&gt;=) ::</span> (<span class="dt">Monad</span> m) <span class="ot">=&gt;</span> m a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> m b</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>m_val <span class="op">&gt;&gt;=</span> m_func <span class="ot">=</span> join (<span class="fu">fmap</span> m_func m_val)</span></code></pre></div>
-<p>This function is called <em>bind</em>. It is so powerful that we could have used it and <code>return</code> to define <code>join</code> and <code>fmap</code> instead of how we did. Actually, the default definition of the monad class in Haskell, which we avoided above, is using <code>return</code> and <code>(&gt;&gt;=)</code>! At this point, we could go back and remove the <code>{-# LANGUAGE NoImplicitPrelude #-}</code> and the <code>import Prelude hiding</code> but, still, we believe would make our machine metaphor more obscure.</p>
-<p>By design, bind doesn’t follow the usual function application notation, <code>f x</code>, with the function on the left and the value on the right. And,indeed, there is a function <code>(=&lt;&lt;)</code> which follows this convention. But <code>(&gt;&gt;=)</code> is more common because it follows the order things usually happen: we have a value, then apply a function, get another value, pass it to another function, etc. This sequencing is something that agrees with the way many “machines” actually work.</p>
-<p>Another strange thing is this name “bind.” The intuition is that, although we can’t read the internal value an <code>m a</code>, we can “bind its value” to the variable that we pass to the function <code>a -&gt; m b</code>. This intuition will make more sense when we work with the <em>do notation</em>. But, we had enough general considerations. Let’s put our hands on an example.</p>
+<p>A very common situation is when we have a monadic value with type <code>m a</code> and want to pass it to a monadic function with type <code>a -&gt; m b</code>. How could we do it? Well, we can’t remove the <code>a</code> from inside the <code>m a</code>, but we can use the ability of the machine to “emulate itself!” The strategy is the following: we first use the <code>fmap_</code> on our monadic function to get something with type <code>m a -&gt; m (m b)</code>; we then it apply to our monadic value and get something with type <code>m (m b)</code>; finally, we resolve the redundancy of having an extra <code>m</code> by applying <code>join</code>. In other words, we use:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ot">bind_ ::</span> (<span class="dt">Machine</span> m) <span class="ot">=&gt;</span> m a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> m b</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>m_val <span class="op">&gt;&gt;=</span> m_func <span class="ot">=</span> join_ (fmap_ m_func m_val)</span></code></pre></div>
+<p>This function is called <em>bind</em>. It is so powerful that we could have used it and <code>return_</code> to define <code>join_</code> and <code>fmap_</code> instead of how we did. Actually, that is the <a href="#def-with-bind">default way in Haskell</a>.</p>
+<p>By design, bind doesn’t follow the usual function application notation, <code>f x</code>, with the function on the left and the value on the right. And, of course, there is a function in Haskell which follows the function application convention. But <code>bind_</code> is more common because it follows the order things usually happen: we have a value, then apply a function, get another value, pass it to another function, etc. This sequencing is something that agrees with the way many “machines” actually work.</p>
+<p>Another strange thing is this name “bind.” The intuition is that, although we can’t read the internal value an <code>m a</code>, we can “bind its value” to the variable that we pass to the function <code>a -&gt; m b</code>. To explain it better, let us “translate” two examples into words.</p>
+<p>The first is very simple: suppose we have an integer in machine code, i.e., an value <code>m_x</code> with type <code>m Integer</code> and we want to pass it to the function <code>\x -&gt; return (x + 1)</code>, which has type <code>Integer -&gt; m Integer</code>. We do</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>m_x <span class="ot">`bind_`</span> (\x <span class="ot">-&gt;</span> return_ (x <span class="op">+</span> <span class="dv">1</span>))</span></code></pre></div>
+<p>which can be read as “Let <code>x</code> be the integer encoded by <code>m_x</code>. Add <code>1</code> to <code>x</code> and return the result to the machine.”</p>
+<p>For an harder example, we will define the function <code>ap_</code>, which corresponds to the function <code>ap</code> in <code>Control.Monad</code>. This function receives an “encoded” function <code>m_f</code> and an “encoded” value <code>m_x</code> and gives us the “machine code” of the value we would get by applying the function to the value:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>ap_ m_f m_x <span class="ot">=</span> m_f <span class="ot">`bind_`</span> (\f <span class="ot">-&gt;</span> m_x <span class="ot">`bind_`</span> (\x <span class="ot">-&gt;</span> <span class="fu">return</span> (f x)))</span></code></pre></div>
+<p>which can be read as “Let <code>f</code> be the function encoded by <code>m_f</code>. Then let <code>x</code> be the value encoded by <code>m_x</code>. Then compute <code>f x</code> and return the resulting value to the machine.”</p>
+<p>If it is not clear now, there is no need to overthink, since we will see more examples below. Also, it is worth to say that this interpretation of <code>bind_</code> will get more explicit with the <em>do notation</em>.</p>
 <h2 id="def-with-bind">Back to reality: how Haskell do it</h2>
+<p>The moment to translate <code>Machine</code> to the way that the <code>Monad</code> class currently defined in Haskell has finally arrived! It has some layers: for a type constructor to have an instance of <code>Monad</code>, it needs an instance of <code>Applicative</code>, which in turn needs an instance of <code>Functor</code>.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Machine</span> m <span class="ot">=&gt;</span> <span class="dt">Monad</span> m <span class="kw">where</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span> <span class="ot">=</span> return_</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  (<span class="op">&gt;&gt;=</span>) <span class="ot">=</span> bind_</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Machine</span> m <span class="ot">=&gt;</span> <span class="dt">Applicative</span> m <span class="kw">where</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pure</span> <span class="ot">=</span> return_</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  (<span class="op">&lt;*&gt;</span>) <span class="ot">=</span> ap_</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Machine</span> m <span class="ot">=&gt;</span> <span class="dt">Functor</span> m <span class="kw">where</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fmap</span> <span class="ot">=</span> fmap_</span></code></pre></div>
+<p>The reverse:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> <span class="dt">Machine</span> m <span class="kw">where</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  return_ <span class="ot">=</span> <span class="fu">return</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  join_ (mm_x) <span class="ot">=</span> mm_x <span class="op">&gt;&gt;=</span> <span class="fu">id</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  fmap_ <span class="ot">=</span> <span class="fu">fmap</span></span></code></pre></div>
 <h1 id="concrete-examples">Concrete examples</h1>
 <p>This is call-by-value, for a call-by-name, see <span class="citation" data-cites="Wad92">[3, Subsection 2.9]</span>.</p>
 <p>To avoid confusing technicalities, we will assume we have a constant monad <code>M</code>, that we will choose which of the monads we will present below by commenting/uncommenting the obvious lines of code.</p>
 <h2 id="representing-our-lambda-calculus-in-haskell">Representing our lambda calculus in Haskell</h2>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- The `Name` type consists of the names we can give to our variables.</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Name</span> <span class="ot">=</span> <span class="dt">String</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- The terms of our simple lambda-calculus are constructed from Ints or free variables by using addition or lambda-abstraction.</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Term</span> <span class="ot">=</span> <span class="dt">Con</span> <span class="dt">Int</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>          <span class="op">|</span> <span class="dt">Var</span> <span class="dt">Name</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>          <span class="op">|</span> <span class="dt">Add</span> <span class="dt">Term</span> <span class="dt">Term</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>          <span class="op">|</span> <span class="dt">Lam</span> <span class="dt">Name</span> <span class="dt">Term</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>          <span class="op">|</span> <span class="dt">App</span> <span class="dt">Term</span> <span class="dt">Term</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co">-- Each term is interpreted into a `Value` by a machine (monad) `m`.</span></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Value</span> <span class="ot">=</span> <span class="dt">Wrong</span> </span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>           <span class="op">|</span> <span class="dt">Num</span> <span class="dt">Int</span></span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>           <span class="op">|</span> <span class="dt">Fun</span> (<span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">M</span> <span class="dt">Value</span>)</span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="co">-- Note that lambda-terms are interpreted as monadic functions `Value -&gt; M Value` and not as functions `Value -&gt; Value`. This is so we can use these functions to interact with the &quot;machine&quot; using bind.</span></span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="co">-- If we have free variables, we need to bind them to values before evaluating the term.</span></span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Environment</span> <span class="ot">=</span> [(<span class="dt">Name</span>, <span class="dt">Value</span>)]</span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="co">-- ## Instances</span></span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Show</span> <span class="dt">Value</span> <span class="kw">where</span></span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">show</span> <span class="dt">Wrong</span>   <span class="ot">=</span> <span class="st">&quot;&lt;wrong&gt;&quot;</span></span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">show</span> (<span class="dt">Num</span> i) <span class="ot">=</span> <span class="fu">show</span> i</span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">show</span> (<span class="dt">Fun</span> f) <span class="ot">=</span> <span class="st">&quot;&lt;function&gt;&quot;</span></span>
-<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="co">-- ## Functions defining the interpreter</span></span>
-<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a><span class="co">-- All monadic functions, even though we don&#39;t need them all to be.</span></span>
-<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a><span class="fu">lookup</span><span class="ot"> ::</span> <span class="dt">Name</span> <span class="ot">-&gt;</span> <span class="dt">Environment</span> <span class="ot">-&gt;</span> <span class="dt">M</span> <span class="dt">Value</span></span>
-<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a><span class="fu">lookup</span> x []        <span class="ot">=</span> <span class="fu">return</span> <span class="dt">Wrong</span></span>
-<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a><span class="fu">lookup</span> x ((y,b)<span class="op">:</span>e) <span class="ot">=</span> <span class="kw">if</span> x<span class="op">==</span>y</span>
-<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>                      <span class="kw">then</span> <span class="fu">return</span> b</span>
-<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>                      <span class="kw">else</span> <span class="fu">lookup</span> x e</span>
-<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a><span class="ot">add ::</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">M</span> <span class="dt">Value</span></span>
-<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>add (<span class="dt">Num</span> i) (<span class="dt">Num</span> j) <span class="ot">=</span> <span class="fu">return</span> <span class="op">$</span> <span class="dt">Num</span> (i<span class="op">+</span>j)</span>
-<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>add _ _ <span class="ot">=</span> <span class="fu">return</span> <span class="dt">Wrong</span></span>
-<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a><span class="ot">apply ::</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">M</span> <span class="dt">Value</span></span>
-<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>apply (<span class="dt">Fun</span> f) a <span class="ot">=</span> f a</span>
-<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>apply _ _ <span class="ot">=</span> <span class="fu">return</span> <span class="dt">Wrong</span></span>
-<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a><span class="ot">interp ::</span> <span class="dt">Term</span> <span class="ot">-&gt;</span> <span class="dt">Environment</span> <span class="ot">-&gt;</span> <span class="dt">M</span> <span class="dt">Value</span></span>
-<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>interp (<span class="dt">Con</span> i) e <span class="ot">=</span> <span class="fu">return</span> (<span class="dt">Num</span> i)</span>
-<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>interp (<span class="dt">Var</span> x) e <span class="ot">=</span> <span class="fu">lookup</span> x e</span>
-<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>interp (<span class="dt">Add</span> u v) e <span class="ot">=</span> interp u e <span class="op">&gt;&gt;=</span></span>
-<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>                      (\a <span class="ot">-&gt;</span> interp v e <span class="op">&gt;&gt;=</span></span>
-<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a>                        \b <span class="ot">-&gt;</span> add a b)</span>
-<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a>interp (<span class="dt">Lam</span> x v) e <span class="ot">=</span> <span class="fu">return</span> (<span class="dt">Fun</span> (\a <span class="ot">-&gt;</span> interp v ((x,a)<span class="op">:</span>e)))</span>
-<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a>interp (<span class="dt">App</span> t u) e <span class="ot">=</span> interp t e <span class="op">&gt;&gt;=</span> (\f <span class="ot">-&gt;</span> interp u e <span class="op">&gt;&gt;=</span> \a <span class="ot">-&gt;</span> apply f a)</span>
-<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a><span class="ot">test ::</span> <span class="dt">Term</span> <span class="ot">-&gt;</span> <span class="dt">String</span></span>
-<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a>test t <span class="ot">=</span> <span class="fu">show</span> (interp t [])</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- The `Name` type consists of the names we can give to our variables.</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Name</span> <span class="ot">=</span> <span class="dt">String</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- The terms of our simple lambda-calculus are constructed from Ints or free variables by using addition or lambda-abstraction.</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Term</span> <span class="ot">=</span> <span class="dt">Con</span> <span class="dt">Int</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>          <span class="op">|</span> <span class="dt">Var</span> <span class="dt">Name</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>          <span class="op">|</span> <span class="dt">Add</span> <span class="dt">Term</span> <span class="dt">Term</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>          <span class="op">|</span> <span class="dt">Lam</span> <span class="dt">Name</span> <span class="dt">Term</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>          <span class="op">|</span> <span class="dt">App</span> <span class="dt">Term</span> <span class="dt">Term</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="co">-- Each term is interpreted into a `Value` by a machine (monad) `m`.</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Value</span> <span class="ot">=</span> <span class="dt">Wrong</span> </span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>           <span class="op">|</span> <span class="dt">Num</span> <span class="dt">Int</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>           <span class="op">|</span> <span class="dt">Fun</span> (<span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">M</span> <span class="dt">Value</span>)</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="co">-- Note that lambda-terms are interpreted as monadic functions `Value -&gt; M Value` and not as functions `Value -&gt; Value`. This is so we can use these functions to interact with the &quot;machine&quot; using bind.</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="co">-- If we have free variables, we need to bind them to values before evaluating the term.</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Environment</span> <span class="ot">=</span> [(<span class="dt">Name</span>, <span class="dt">Value</span>)]</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="co">-- ## Instances</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Show</span> <span class="dt">Value</span> <span class="kw">where</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">show</span> <span class="dt">Wrong</span>   <span class="ot">=</span> <span class="st">&quot;&lt;wrong&gt;&quot;</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">show</span> (<span class="dt">Num</span> i) <span class="ot">=</span> <span class="fu">show</span> i</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">show</span> (<span class="dt">Fun</span> f) <span class="ot">=</span> <span class="st">&quot;&lt;function&gt;&quot;</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a><span class="co">-- ## Functions defining the interpreter</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a><span class="co">-- All monadic functions, even though we don&#39;t need them all to be.</span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a><span class="fu">lookup</span><span class="ot"> ::</span> <span class="dt">Name</span> <span class="ot">-&gt;</span> <span class="dt">Environment</span> <span class="ot">-&gt;</span> <span class="dt">M</span> <span class="dt">Value</span></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a><span class="fu">lookup</span> x []        <span class="ot">=</span> <span class="fu">return</span> <span class="dt">Wrong</span></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a><span class="fu">lookup</span> x ((y,b)<span class="op">:</span>e) <span class="ot">=</span> <span class="kw">if</span> x<span class="op">==</span>y</span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>                      <span class="kw">then</span> <span class="fu">return</span> b</span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>                      <span class="kw">else</span> <span class="fu">lookup</span> x e</span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a><span class="ot">add ::</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">M</span> <span class="dt">Value</span></span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>add (<span class="dt">Num</span> i) (<span class="dt">Num</span> j) <span class="ot">=</span> <span class="fu">return</span> <span class="op">$</span> <span class="dt">Num</span> (i<span class="op">+</span>j)</span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>add _ _ <span class="ot">=</span> <span class="fu">return</span> <span class="dt">Wrong</span></span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a><span class="ot">apply ::</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">M</span> <span class="dt">Value</span></span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>apply (<span class="dt">Fun</span> f) a <span class="ot">=</span> f a</span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>apply _ _ <span class="ot">=</span> <span class="fu">return</span> <span class="dt">Wrong</span></span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a><span class="ot">interp ::</span> <span class="dt">Term</span> <span class="ot">-&gt;</span> <span class="dt">Environment</span> <span class="ot">-&gt;</span> <span class="dt">M</span> <span class="dt">Value</span></span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>interp (<span class="dt">Con</span> i) e <span class="ot">=</span> <span class="fu">return</span> (<span class="dt">Num</span> i)</span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>interp (<span class="dt">Var</span> x) e <span class="ot">=</span> <span class="fu">lookup</span> x e</span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>interp (<span class="dt">Add</span> u v) e <span class="ot">=</span> interp u e <span class="op">&gt;&gt;=</span></span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>                      (\a <span class="ot">-&gt;</span> interp v e <span class="op">&gt;&gt;=</span></span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>                        \b <span class="ot">-&gt;</span> add a b)</span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a>interp (<span class="dt">Lam</span> x v) e <span class="ot">=</span> <span class="fu">return</span> (<span class="dt">Fun</span> (\a <span class="ot">-&gt;</span> interp v ((x,a)<span class="op">:</span>e)))</span>
+<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a>interp (<span class="dt">App</span> t u) e <span class="ot">=</span> interp t e <span class="op">&gt;&gt;=</span> (\f <span class="ot">-&gt;</span> interp u e <span class="op">&gt;&gt;=</span> \a <span class="ot">-&gt;</span> apply f a)</span>
+<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a><span class="ot">test ::</span> <span class="dt">Term</span> <span class="ot">-&gt;</span> <span class="dt">String</span></span>
+<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a>test t <span class="ot">=</span> <span class="fu">show</span> (interp t [])</span></code></pre></div>
 <h2 id="main-examples">Main examples</h2>
 <h3 id="machine-0-identity">Machine 0: Identity</h3>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">M</span> <span class="ot">=</span> <span class="dt">Id</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">newtype</span> <span class="dt">Id</span> a <span class="ot">=</span> <span class="dt">Id</span> a</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Monad</span> <span class="dt">Id</span> <span class="kw">where</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span> a <span class="ot">=</span> <span class="dt">Id</span> a</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  join (<span class="dt">Id</span> (<span class="dt">Id</span> a)) <span class="ot">=</span> <span class="dt">Id</span> a</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fmap</span> f (<span class="dt">Id</span> a) <span class="ot">=</span> <span class="dt">Id</span> (f a)</span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Show</span> a <span class="ot">=&gt;</span> <span class="dt">Show</span> (<span class="dt">Id</span> a) <span class="kw">where</span></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">show</span> (<span class="dt">Id</span> a) <span class="ot">=</span> <span class="fu">show</span> a</span></code></pre></div>
-<h3 id="machine-errors">Machine 1: Error Messages</h3>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- type M = E</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">E</span> a <span class="ot">=</span> <span class="dt">Error</span> <span class="dt">String</span> <span class="op">|</span> <span class="dt">Success</span> a </span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Monad</span> <span class="dt">E</span> <span class="kw">where</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="ot">  return ::</span> a <span class="ot">-&gt;</span> <span class="dt">E</span> a</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span> a <span class="ot">=</span> <span class="dt">Success</span> a</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="ot">  join ::</span> <span class="dt">E</span> (<span class="dt">E</span> a) <span class="ot">-&gt;</span> <span class="dt">E</span> a</span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  join (<span class="dt">Success</span> (<span class="dt">Success</span> a)) <span class="ot">=</span> <span class="dt">Success</span> a</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  join (<span class="dt">Success</span> (<span class="dt">Error</span> msg)) <span class="ot">=</span> <span class="dt">Error</span> msg</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>  join (<span class="dt">Error</span> msg)           <span class="ot">=</span> <span class="dt">Error</span> msg</span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="ot">  fmap ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">E</span> a <span class="ot">-&gt;</span> <span class="dt">E</span> b</span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fmap</span> f (<span class="dt">Success</span> a) <span class="ot">=</span> <span class="dt">Success</span> (f a)</span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fmap</span> f (<span class="dt">Error</span> msg) <span class="ot">=</span> <span class="dt">Error</span> msg</span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Show</span> a <span class="ot">=&gt;</span> <span class="dt">Show</span> (<span class="dt">E</span> a) <span class="kw">where</span></span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">show</span> (<span class="dt">Success</span> a) <span class="ot">=</span> <span class="fu">show</span> a</span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">show</span> (<span class="dt">Error</span> msg) <span class="ot">=</span> <span class="st">&quot;ERROR! &quot;</span> <span class="op">++</span> msg</span></code></pre></div>
-<p>Changes to the interpreter:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">lookup</span> x [] <span class="ot">=</span> errorE (<span class="st">&quot;Unbound variable: &quot;</span> <span class="op">++</span> x)</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>add a b <span class="ot">=</span> errorE (<span class="st">&quot;Should be numbers: &quot;</span> <span class="op">++</span> <span class="fu">show</span> a <span class="op">++</span> <span class="st">&quot;,&quot;</span> <span class="op">++</span> <span class="fu">show</span> b)</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>apply f a <span class="ot">=</span> errorE (<span class="st">&quot;Should be a function: &quot;</span> <span class="op">++</span> <span class="fu">show</span> f)</span></code></pre></div>
-<h3 id="machine-count">Machine 2: State</h3>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">newtype</span> <span class="dt">StateMachine</span> state a <span class="ot">=</span> <span class="dt">SM</span> (state <span class="ot">-&gt;</span> (a, state))</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Monad</span> (<span class="dt">StateMachine</span> state) <span class="kw">where</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="ot">  return ::</span> a <span class="ot">-&gt;</span> <span class="dt">StateMachine</span> state a</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span> a <span class="ot">=</span> <span class="dt">SM</span> <span class="op">$</span> \s <span class="ot">-&gt;</span> (a, s)</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="ot">  join ::</span> <span class="dt">StateMachine</span> state (<span class="dt">StateMachine</span> state a) <span class="ot">-&gt;</span> <span class="dt">StateMachine</span> state a</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  join (<span class="dt">SM</span> metaMachine) <span class="ot">=</span> <span class="dt">SM</span> newMachine</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">where</span></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>      newMachine s0 <span class="ot">=</span> <span class="kw">let</span> (<span class="dt">SM</span> machine, s1) <span class="ot">=</span> metaMachine s0 <span class="kw">in</span> machine s1</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="ot">  fmap ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">StateMachine</span> state a <span class="ot">-&gt;</span> <span class="dt">StateMachine</span> state b</span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fmap</span> f (<span class="dt">SM</span> machine) <span class="ot">=</span> <span class="dt">SM</span> newMachine</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">where</span></span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>      newMachine s0 <span class="ot">=</span> <span class="kw">let</span> (a, s1) <span class="ot">=</span> machine s0 <span class="kw">in</span> (f a, s1)</span></code></pre></div>
-<p>More stuff:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a></span>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">M</span> <span class="ot">=</span> <span class="dt">Id</span></span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- instance for show only for the case the `state` is taken to be Int</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="kw">newtype</span> <span class="dt">Id</span> a <span class="ot">=</span> <span class="dt">Id</span> a</span>
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">CountingMachine</span> <span class="ot">=</span> <span class="dt">StateMachine</span> <span class="dt">Int</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Show</span> a <span class="ot">=&gt;</span> <span class="dt">Show</span> (<span class="dt">CountingMachine</span> a) <span class="kw">where</span></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">show</span> (<span class="dt">SM</span> machine) <span class="ot">=</span> <span class="kw">let</span> (a, s1) <span class="ot">=</span> machine <span class="dv">0</span> <span class="kw">in</span></span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>                      <span class="st">&quot;Value: &quot;</span> <span class="op">++</span> <span class="fu">show</span> a <span class="op">++</span> <span class="st">&quot;; &quot;</span> <span class="op">++</span></span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>                      <span class="st">&quot;Count: &quot;</span> <span class="op">++</span> <span class="fu">show</span> s1</span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="co">-- The typing of `tick` makes clear that the value returned is not of interest. It is analogous to the use in an impure language of a function with result type (), indicating that the purpose of the function lies in a side effect.</span></span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="ot">tick ::</span> <span class="dt">CountingMachine</span> ()</span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>tick <span class="ot">=</span> <span class="dt">SM</span> <span class="op">$</span> \s <span class="ot">-&gt;</span> ((), s<span class="op">+</span><span class="dv">1</span>)</span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="co">-- If we want to read the current state, we can use:</span></span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="ot">fetch ::</span> <span class="dt">StateMachine</span> state state</span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>fetch <span class="ot">=</span> <span class="dt">SM</span> machine</span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
-<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>    machine s <span class="ot">=</span> (s, s)</span></code></pre></div>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Machine</span> <span class="dt">Id</span> <span class="kw">where</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  return_ a <span class="ot">=</span> <span class="dt">Id</span> a</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  join_ (<span class="dt">Id</span> (<span class="dt">Id</span> a)) <span class="ot">=</span> <span class="dt">Id</span> a</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  fmap_ f (<span class="dt">Id</span> a) <span class="ot">=</span> <span class="dt">Id</span> (f a)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Show</span> a <span class="ot">=&gt;</span> <span class="dt">Show</span> (<span class="dt">Id</span> a) <span class="kw">where</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">show</span> (<span class="dt">Id</span> a) <span class="ot">=</span> <span class="fu">show</span> a</span></code></pre></div>
+<h3 id="machine-errors">Machine 1: Error Messages</h3>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- type M = E</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">E</span> a <span class="ot">=</span> <span class="dt">Error</span> <span class="dt">String</span> <span class="op">|</span> <span class="dt">Success</span> a </span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Machine</span> <span class="dt">E</span> <span class="kw">where</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="ot">  return_ ::</span> a <span class="ot">-&gt;</span> <span class="dt">E</span> a</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  return_ a <span class="ot">=</span> <span class="dt">Success</span> a</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="ot">  join_ ::</span> <span class="dt">E</span> (<span class="dt">E</span> a) <span class="ot">-&gt;</span> <span class="dt">E</span> a</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  join_ (<span class="dt">Success</span> (<span class="dt">Success</span> a)) <span class="ot">=</span> <span class="dt">Success</span> a</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>  join_ (<span class="dt">Success</span> (<span class="dt">Error</span> msg)) <span class="ot">=</span> <span class="dt">Error</span> msg</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>  join_ (<span class="dt">Error</span> msg)           <span class="ot">=</span> <span class="dt">Error</span> msg</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="ot">  fmap_ ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">E</span> a <span class="ot">-&gt;</span> <span class="dt">E</span> b</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>  fmap_ f (<span class="dt">Success</span> a) <span class="ot">=</span> <span class="dt">Success</span> (f a)</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>  fmap_ f (<span class="dt">Error</span> msg) <span class="ot">=</span> <span class="dt">Error</span> msg</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Show</span> a <span class="ot">=&gt;</span> <span class="dt">Show</span> (<span class="dt">E</span> a) <span class="kw">where</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">show</span> (<span class="dt">Success</span> a) <span class="ot">=</span> <span class="fu">show</span> a</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">show</span> (<span class="dt">Error</span> msg) <span class="ot">=</span> <span class="st">&quot;ERROR! &quot;</span> <span class="op">++</span> msg</span></code></pre></div>
+<p>Changes to the interpreter:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">lookup</span> x [] <span class="ot">=</span> errorE (<span class="st">&quot;Unbound variable: &quot;</span> <span class="op">++</span> x)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>add a b <span class="ot">=</span> errorE (<span class="st">&quot;Should be numbers: &quot;</span> <span class="op">++</span> <span class="fu">show</span> a <span class="op">++</span> <span class="st">&quot;,&quot;</span> <span class="op">++</span> <span class="fu">show</span> b)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>apply f a <span class="ot">=</span> errorE (<span class="st">&quot;Should be a function: &quot;</span> <span class="op">++</span> <span class="fu">show</span> f)</span></code></pre></div>
+<h3 id="machine-count">Machine 2: State</h3>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="kw">newtype</span> <span class="dt">StateMachine</span> state a <span class="ot">=</span> <span class="dt">SM</span> (state <span class="ot">-&gt;</span> (a, state))</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Monad</span> (<span class="dt">StateMachine</span> state) <span class="kw">where</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="ot">  return_ ::</span> a <span class="ot">-&gt;</span> <span class="dt">StateMachine</span> state a</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  return_ a <span class="ot">=</span> <span class="dt">SM</span> <span class="op">$</span> \s <span class="ot">-&gt;</span> (a, s)</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="ot">  join_ ::</span> <span class="dt">StateMachine</span> state (<span class="dt">StateMachine</span> state a) <span class="ot">-&gt;</span> <span class="dt">StateMachine</span> state a</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>  join_ (<span class="dt">SM</span> metaMachine) <span class="ot">=</span> <span class="dt">SM</span> newMachine</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">where</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>      newMachine s0 <span class="ot">=</span> <span class="kw">let</span> (<span class="dt">SM</span> machine, s1) <span class="ot">=</span> metaMachine s0 <span class="kw">in</span> machine s1</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="ot">  fmap_ ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">StateMachine</span> state a <span class="ot">-&gt;</span> <span class="dt">StateMachine</span> state b</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>  fmap_ f (<span class="dt">SM</span> machine) <span class="ot">=</span> <span class="dt">SM</span> newMachine</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">where</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>      newMachine s0 <span class="ot">=</span> <span class="kw">let</span> (a, s1) <span class="ot">=</span> machine s0 <span class="kw">in</span> (f a, s1)</span></code></pre></div>
+<p>More stuff:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- instance for show only for the case the `state` is taken to be Int</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">CountingMachine</span> <span class="ot">=</span> <span class="dt">StateMachine</span> <span class="dt">Int</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Show</span> a <span class="ot">=&gt;</span> <span class="dt">Show</span> (<span class="dt">CountingMachine</span> a) <span class="kw">where</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">show</span> (<span class="dt">SM</span> machine) <span class="ot">=</span> <span class="kw">let</span> (a, s1) <span class="ot">=</span> machine <span class="dv">0</span> <span class="kw">in</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>                      <span class="st">&quot;Value: &quot;</span> <span class="op">++</span> <span class="fu">show</span> a <span class="op">++</span> <span class="st">&quot;; &quot;</span> <span class="op">++</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>                      <span class="st">&quot;Count: &quot;</span> <span class="op">++</span> <span class="fu">show</span> s1</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="co">-- The typing of `tick` makes clear that the value returned is not of interest. It is analogous to the use in an impure language of a function with result type (), indicating that the purpose of the function lies in a side effect.</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="ot">tick ::</span> <span class="dt">CountingMachine</span> ()</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>tick <span class="ot">=</span> <span class="dt">SM</span> <span class="op">$</span> \s <span class="ot">-&gt;</span> ((), s<span class="op">+</span><span class="dv">1</span>)</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="co">-- If we want to read the current state, we can use:</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a><span class="ot">fetch ::</span> <span class="dt">StateMachine</span> state state</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>fetch <span class="ot">=</span> <span class="dt">SM</span> machine</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>    machine s <span class="ot">=</span> (s, s)</span></code></pre></div>
 <h3 id="machine-example">Machine 3: Output</h3>
 <h3 id="machine-4-non-deterministic-choice">Machine 4: Non-deterministic choice</h3>
 <h2 id="more-examples">More examples</h2>
