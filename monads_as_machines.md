@@ -271,6 +271,9 @@ apply f a = errorE ("Should be a function: " ++ show f)
 
 ### Machine 2: State {#machine-count}
 
+Our next machine has a changing state that influence and is influenced by the computations.
+Perhaps this is the most fundamental example.
+
 ```haskell
 newtype StateMachine state a = SM (state -> (a, state))
 
@@ -289,7 +292,24 @@ instance Machine (StateMachine state) where
       newMachine s0 = let (a, s1) = machine s0 in (f a, s1)
 ```
 
-We define an instance for show only for the case the `state` is taken to be `Int`:
+For our interpreter, we will use as state an `Int` that counts how man times function is applied or an addition is performed. To this end, we will need the following piece of machinery:
+
+```haskell
+tick :: StateMachine Int ()
+tick = SM $ \s -> ((), s+1)
+```
+
+The typing of `tick` makes clear that the value returned is not of interest.
+It is analogous to the use in an impure language of a function that returns nothing, indicating that the purpose of the function lies in a side effect.
+
+Then, we add the following changes in our interpreter:
+
+```haskell
+apply (Fun f) a = tick >>= (\() -> f a)
+add (Num i) (Num j) = tick >>= (\() -> return (Num (i+j)))
+```
+
+Finally, we only define an instance of `Show` for the case `state` is `Int` (this definition relies in the `FlexibleInstances` addon):
 
 ```haskell
 instance Show a => Show (StateMachine Int a) where
@@ -298,19 +318,7 @@ instance Show a => Show (StateMachine Int a) where
                       "Count: " ++ show s1
 ```
 
-The typing of `tick` makes clear that the value returned is not of interest. It is analogous to the use in an impure language of a function with result type (), indicating that the purpose of the function lies in a side effect.
-
-```haskell
-tick :: StateMachine Int ()
-tick = SM $ \s -> ((), s+1)
-```
-
-Changes:
-
-```haskell
-apply (Fun f) a = tick >>= (\() -> f a)
-add (Num i) (Num j) = tick >>= (\() -> return (Num (i+j)))
-```
+Now `test term0` evaluates to `"Value: 42; Count: 3"`.
 
 #### Variation
 
