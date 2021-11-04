@@ -2,33 +2,34 @@
 {-# LANGUAGE UndecidableInstances #-} -- To be able to automatically deduce `Monad` from `Machine`
 {-# LANGUAGE FlexibleInstances #-} -- To avoid creating newtypes to define some intances
 
-module Machine where
+module Machines where
 
 -- # Machine class
 
 class Machine m where
-  return_ :: a ->  m a
-  join_ :: m (m a) -> m a
-  fmap_ :: (a -> b) -> m a -> m b
+  returnM :: a ->  m a
+  joinM :: m (m a) -> m a
+  fmapM :: (a -> b) -> m a -> m b
 
-bind_ :: (Machine m) => m a -> (a -> m b) -> m b
-bind_ m_val m_func = join_ (fmap_ m_func m_val)
+bindM :: (Machine m) => m a -> (a -> m b) -> m b
+bindM m_val m_func = joinM (fmapM m_func m_val)
 
-ap_ :: (Machine m) => m (a -> b) -> m a -> m b
-ap_ m_f m_x = m_f `bind_` (\f -> m_x `bind_` (\x -> return_ (f x)))
+apM :: (Machine m) => m (a -> b) -> m a -> m b
+apM m_f m_x = m_f `bindM` (\f -> m_x `bindM` (\x -> returnM (f x)))
 
 -- # Back to Monads
 
 instance Machine m => Functor m where
-  fmap = fmap_
+  fmap = fmapM
 
 instance Machine m => Applicative m where
-  pure = return_
-  (<*>) = ap_
+  pure = returnM
+  (<*>) = apM
 
 instance Machine m => Monad m where
-  return = return_
-  (>>=) = bind_
+  return = returnM
+  (>>=) = bindM
+
 -- # Lambda Calculus
 
 -- ## Choices for machine M
@@ -46,6 +47,8 @@ data Term = Con Int
           | Add Term Term
           | Lam Name Term
           | App Term Term
+-- Add for variation of Machine 2:
+        --  | Count
 
 data Value = Wrong 
            | Num Int
@@ -53,11 +56,26 @@ data Value = Wrong
 
 type Environment = [(Name, Value)]
 
--- Examples
+-- ## Examples of terms
 
 -- term0 is (\x -> x + x) (10 + 11)
 term0 :: Term
 term0 = App (Lam "x" (Add (Var "x") (Var "x"))) (Add (Con 10) (Con 11))
+
+-- term1
+term1 :: Term
+term1 = App (Con 1) (Con 2)
+
+-- term2 (for Machine 2)
+-- term2 :: Term
+-- term2 = Add (Add (Con 1) (Con 2)) Count
+
+-- term3 (for Machine 3)
+-- term3 :: Term
+-- term3 = Add (Out (Con 41)) (Out (Con 1))
+
+-- term4 (for Machine 4)
+-- App (Lam "x" (Add (Var "x") (Var "x"))) (Amb (Con 1) (Con 2))
 
 -- ## Instances
 instance Show Value where
@@ -99,6 +117,9 @@ interp (Add u v) e = interp u e >>=
                         \b -> add a b)
 interp (Lam x v) e = return (Fun (\a -> interp v ((x,a):e)))
 interp (App t u) e = interp t e >>= (\f -> interp u e >>= \a -> apply f a)
+-- Add for variation of Machine 2:
+-- interp Count e = fetch >>= (\i -> return (Num i))
+
 
 test :: Term -> String
 test t = show (interp t [])
@@ -110,9 +131,9 @@ test t = show (interp t [])
 newtype Id a = Id a
 
 instance Machine Id where
-  return_ a = Id a
-  join_ (Id (Id a)) = Id a
-  fmap_ f (Id a) = Id (f a)
+  returnM a = Id a
+  joinM (Id (Id a)) = Id a
+  fmapM f (Id a) = Id (f a)
 
 instance Show a => Show (Id a) where
   show (Id a) = show a
@@ -122,17 +143,17 @@ instance Show a => Show (Id a) where
 data E a = Error String | Success a 
 
 instance Machine E where
-  return_ :: a -> E a
-  return_ a = Success a
+  returnM :: a -> E a
+  returnM a = Success a
 
-  join_ :: E (E a) -> E a
-  join_ (Success (Success a)) = Success a
-  join_ (Success (Error msg)) = Error msg
-  join_ (Error msg)           = Error msg
+  joinM :: E (E a) -> E a
+  joinM (Success (Success a)) = Success a
+  joinM (Success (Error msg)) = Error msg
+  joinM (Error msg)           = Error msg
 
-  fmap_ :: (a -> b) -> E a -> E b
-  fmap_ f (Success a) = Success (f a)
-  fmap_ f (Error msg) = Error msg
+  fmapM :: (a -> b) -> E a -> E b
+  fmapM f (Success a) = Success (f a)
+  fmapM f (Error msg) = Error msg
 
 instance Show a => Show (E a) where
   show (Success a) = show a
@@ -143,23 +164,18 @@ instance Show a => Show (E a) where
 newtype StateMachine state a = SM (state -> (a, state))
 
 instance Machine (StateMachine state) where
-  return_ :: a -> StateMachine state a
-  return_ a = SM $ \s -> (a, s)
+  returnM :: a -> StateMachine state a
+  returnM a = SM $ \s -> (a, s)
   
-  join_ :: StateMachine state (StateMachine state a) -> StateMachine state a
-  join_ (SM metaMachine) = SM newMachine
+  joinM :: StateMachine state (StateMachine state a) -> StateMachine state a
+  joinM (SM metaMachine) = SM newMachine
     where
       newMachine s0 = let (SM machine, s1) = metaMachine s0 in machine s1
 
-  fmap_ :: (a -> b) -> StateMachine state a -> StateMachine state b
-  fmap_ f (SM machine) = SM newMachine
+  fmapM :: (a -> b) -> StateMachine state a -> StateMachine state b
+  fmapM f (SM machine) = SM newMachine
     where
       newMachine s0 = let (a, s1) = machine s0 in (f a, s1)
-
-fetch :: StateMachine state state
-fetch = SM machine
-  where
-    machine s = (s, s)
 
 instance Show a => Show (StateMachine Int a) where
   show (SM machine) = let (a, s1) = machine 0 in
@@ -168,3 +184,12 @@ instance Show a => Show (StateMachine Int a) where
 
 tick :: StateMachine Int ()
 tick = SM $ \s -> ((), s+1)
+
+-- Reading the State:
+
+fetch :: StateMachine state state
+fetch = SM machine
+  where
+    machine s = (s, s)
+
+
