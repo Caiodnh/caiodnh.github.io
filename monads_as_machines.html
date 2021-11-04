@@ -256,7 +256,7 @@
 <ul>
 <li>Formally speaking, the reader must know only some basic Haskell, including classes and type and data constructors. Of course, having some experience helps.</li>
 <li>Our main example is an interpreter of a very simple lambda-calculus, but it is very easy to learn.</li>
-<li>We will not use any earlier knowledge of functors nor applicatives.</li>
+<li>We will not use any earlier knowledge of <code>Functor</code> nor <code>Applicative</code>.</li>
 </ul>
 <h1 id="introduction">Introduction</h1>
 <p>Most texts introducing monads present no intuition at all. This is related to a way to see mathematics (including computer science as a part of it) as a purely formal matter, and even though when talking to mathematicians they give informal insights on how to think about the things they write, those insights never get to the text. We believe this is foolish, and good intuitions are fundamental, even at the cost of looking like people from the arts department (<em>argh!</em>). We still believe that in the end of the day the formal part is what matters, but the informal is very fruitful in the morning, afternoon and even early evening.</p>
@@ -268,6 +268,7 @@
 <li>We prefer to introduce the Monad class via the <em>join</em> function rather than <em>bind</em>, but we go back to the <a href="#def-with-bind">standard way</a> as fast as possible; to this end, we create the <a href="#monads-as-machines"><code>Machine</code> class</a></li>
 <li>We do not follow the full paper, only the first few sections, which are the ones that explain monads. We also changed the order of the examples presented, because we believe some are more <a href="#main-examples">important</a> than <a href="#more-examples">others</a>.</li>
 </ul>
+<p>You can download a source code to follow this article <a href="./monads_as_machines.hs">here</a>.</p>
 <p>Let’s start with an excerpt of that paper’s introduction:</p>
 <blockquote>
 <p>Say I write an interpreter in a pure functional language.</p>
@@ -459,8 +460,8 @@
 <span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
 <span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>    machine s <span class="ot">=</span> (s, s)</span></code></pre></div>
 <p>Changes:</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>apply (<span class="dt">Fun</span> f) a <span class="ot">=</span> tickS <span class="op">&gt;&gt;=</span> (\() <span class="ot">-&gt;</span> f a)</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>add (<span class="dt">Num</span> i) (<span class="dt">Num</span> j) <span class="ot">=</span> tickS <span class="op">&gt;&gt;=</span> (\() <span class="ot">-&gt;</span> unitS (<span class="dt">Num</span> (i<span class="op">+</span>j)))</span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>apply (<span class="dt">Fun</span> f) a <span class="ot">=</span> tick <span class="op">&gt;&gt;=</span> (\() <span class="ot">-&gt;</span> f a)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>add (<span class="dt">Num</span> i) (<span class="dt">Num</span> j) <span class="ot">=</span> tick <span class="op">&gt;&gt;=</span> (\() <span class="ot">-&gt;</span> unitS (<span class="dt">Num</span> (i<span class="op">+</span>j)))</span></code></pre></div>
 <h3 id="machine-example">Machine 3: Output</h3>
 <h3 id="machine-4-non-deterministic-choice">Machine 4: Non-deterministic choice</h3>
 <h2 id="more-examples">More examples</h2>

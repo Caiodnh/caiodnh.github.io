@@ -14,7 +14,7 @@ The readers MUST be comfortable with ill-defined notions appealing to their subj
 
 * Formally speaking, the reader must know only some basic Haskell, including classes and type and data constructors. Of course, having some experience helps.
 * Our main example is an interpreter of a very simple lambda-calculus, but it is very easy to learn.
-* We will not use any earlier knowledge of functors nor applicatives.
+* We will not use any earlier knowledge of `Functor` nor `Applicative`.
 
 # Introduction
 
@@ -28,6 +28,8 @@ This metaphor came to us after looking different sources to try to have a better
 * We are adapting the code to the current way Haskell is written;
 * We prefer to introduce the Monad class via the *join* function rather than *bind*, but we go back to the [standard way](#def-with-bind) as fast as possible; to this end, we create the [`Machine` class](#monads-as-machines)
 * We do not follow the full paper, only the first few sections, which are the ones that explain monads. We also changed the order of the examples presented, because we believe some are more [important](#main-examples) than [others](#more-examples). 
+
+You can download a source code to follow this article [here](./monads_as_machines.hs).
 
 Let's start with an excerpt of that paper's introduction: 
 
@@ -297,8 +299,8 @@ fetch = SM machine
 Changes:
 
 ```haskell
-apply (Fun f) a = tickS >>= (\() -> f a)
-add (Num i) (Num j) = tickS >>= (\() -> unitS (Num (i+j)))
+apply (Fun f) a = tick >>= (\() -> f a)
+add (Num i) (Num j) = tick >>= (\() -> unitS (Num (i+j)))
 ```
 
 ### Machine 3: Output {#machine-example}
