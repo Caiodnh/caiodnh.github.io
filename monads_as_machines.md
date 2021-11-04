@@ -1,6 +1,6 @@
 % Monads are machines: an intuitive introduction to monads
 % Seno
-% October, 2021
+% November, 2021
 
 --------------------------------------------------------------------
 **WARNING!!!**
@@ -85,7 +85,7 @@ A very common situation is when we have a monadic value with type `m a` and want
 
 ```haskell
 bind_ :: (Machine m) => m a -> (a -> m b) -> m b
-m_val >>= m_func = join_ (fmap_ m_func m_val)
+bind_ m_val m_func = join_ (fmap_ m_func m_val)
 ```
 
 This function is called *bind*. It is so powerful that we could have used it and `return_` to define `join_` and `fmap_` instead of how we did. Actually, that is the [default way in Haskell](#def-with-bind).
@@ -102,7 +102,8 @@ which can be read as "Let `x` be the integer encoded by `m_x`. Add `1` to `x` an
 
 For an harder example, we will define the function `ap_`, which corresponds to the function `ap` in `Control.Monad`. This function receives an "encoded" function `m_f` and an "encoded" value `m_x` and gives us the "machine code" of the value we would get by applying the function to the value:
 ```haskell
-ap_ m_f m_x = m_f `bind_` (\f -> m_x `bind_` (\x -> return (f x)))
+ap_ :: (Machine m) => m (a -> b) -> m a -> m b
+ap_ m_f m_x = m_f `bind_` (\f -> m_x `bind_` (\x -> return_ (f x)))
 ```
 which can be read as "Let `f` be the function encoded by `m_f`. Then let `x` be the value encoded by `m_x`. Then compute `f x` and return the resulting value to the machine."
 
@@ -257,7 +258,7 @@ apply f a = errorE ("Should be a function: " ++ show f)
 
 newtype StateMachine state a = SM (state -> (a, state))
 
-instance Monad (StateMachine state) where
+instance Machine (StateMachine state) where
   return_ :: a -> StateMachine state a
   return_ a = SM $ \s -> (a, s)
   
@@ -277,15 +278,13 @@ More stuff:
 ```haskell
 -- instance for show only for the case the `state` is taken to be Int
 
-type CountingMachine = StateMachine Int
-
-instance Show a => Show (CountingMachine a) where
+instance Show a => Show (StateMachine Int a) where
   show (SM machine) = let (a, s1) = machine 0 in
                       "Value: " ++ show a ++ "; " ++
                       "Count: " ++ show s1
 
 -- The typing of `tick` makes clear that the value returned is not of interest. It is analogous to the use in an impure language of a function with result type (), indicating that the purpose of the function lies in a side effect.
-tick :: CountingMachine ()
+tick :: StateMachine Int ()
 tick = SM $ \s -> ((), s+1)
 
 -- If we want to read the current state, we can use:
@@ -293,6 +292,13 @@ fetch :: StateMachine state state
 fetch = SM machine
   where
     machine s = (s, s)
+```
+
+Changes:
+
+```haskell
+apply (Fun f) a = tickS >>= (\() -> f a)
+add (Num i) (Num j) = tickS >>= (\() -> unitS (Num (i+j)))
 ```
 
 ### Machine 3: Output {#machine-example}
