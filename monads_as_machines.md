@@ -106,6 +106,8 @@ ap_ m_f m_x = m_f `bind_` (\f -> m_x `bind_` (\x -> return (f x)))
 ```
 which can be read as "Let `f` be the function encoded by `m_f`. Then let `x` be the value encoded by `m_x`. Then compute `f x` and return the resulting value to the machine."
 
+It may sound strange to use variables of functions for a "let" statement. But the usual `let` in Haskell can be interpreted as a function application: `let x = a in expression` is the same as "change all the occurrences of `x` to `a` in `expression`", which is the same as `(\x -> expression) a`. The strangeness comes from the fact that we usually think of the `x` in `let x = a` as an constant. But what is an constant if not an variable with a value assigned to it? Well, assigning a value to a variable is precisely what function application does.
+
 If it is not clear now, there is no need to overthink, since we will see more examples below. Also, it is worth to say that this interpretation of `bind_` will get more explicit with the *do notation*.
 
 ## Back to reality: how Haskell do it {#def-with-bind}
@@ -131,7 +133,7 @@ The reverse:
 instance Monad m => Machine m where
   return_ = return
   join_ (mm_x) = mm_x >>= id
-  fmap_ = fmap
+  fmap_ f m_x = m_x >>= (\x -> return (f x))
 ``` 
 
 # Concrete examples
