@@ -237,6 +237,47 @@
 <p class="author">Seno</p>
 <p class="date">November, 2021</p>
 </header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#the-abstract-notion-of-monad">The Abstract Notion of Monad</a>
+<ul>
+<li><a href="#monads-as-machines">The <code>Machine</code> class</a></li>
+<li><a href="#bind">Monadic functions and bind</a>
+<ul>
+<li><a href="#the-name-bind">The name “bind”</a></li>
+</ul></li>
+<li><a href="#def-with-bind">Back to reality: how Haskell do it</a></li>
+</ul></li>
+<li><a href="#concrete-examples">Concrete examples</a>
+<ul>
+<li><a href="#representing-our-lambda-calculus-in-haskell">Representing our lambda calculus in Haskell</a>
+<ul>
+<li><a href="#types">Types</a></li>
+<li><a href="#instance-of-show">Instance of Show</a></li>
+<li><a href="#functions-defining-the-interpreter">Functions defining the interpreter</a></li>
+</ul></li>
+<li><a href="#main-examples">Main examples</a>
+<ul>
+<li><a href="#machine-0-identity">Machine 0: Identity</a></li>
+<li><a href="#machine-errors">Machine 1: Error Messages</a></li>
+<li><a href="#machine-count">Machine 2: State</a></li>
+<li><a href="#machine-example">Machine 3: Output</a></li>
+<li><a href="#list-monad">Machine 4: Non-deterministic choice</a></li>
+</ul></li>
+<li><a href="#more-examples">More examples</a>
+<ul>
+<li><a href="#machine-5-errors-with-position">Machine 5: Errors with position</a></li>
+<li><a href="#machine-6-reverse-state">Machine 6: Reverse State</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#monad-laws">The monad laws</a>
+<ul>
+<li><a href="#with-return-join-and-fmap">With <code>return</code>, <code>join</code> and <code>fmap</code></a></li>
+<li><a href="#with-bind-monad-composition">With <code>bind</code>; Monad composition</a></li>
+</ul></li>
+</ul>
+</nav>
 <table style="width:96%;">
 <colgroup>
 <col style="width: 95%" />
