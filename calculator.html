@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Seno" />
+  <title>Monads are machines: an intuitive introduction to monads</title>
+  <style>
+    html {
+      line-height: 1.5;
+      font-family: Georgia, serif;
+      font-size: 20px;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      word-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 1em;
+      }
+    }
+    @media print {
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, 'Lucida Console', Consolas, monospace;
+      font-size: 85%;
+      margin: 0;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    div.csl-bib-body { }
+    div.csl-entry {
+      clear: both;
+    }
+    .hanging div.csl-entry {
+      margin-left:2em;
+      text-indent:-2em;
+    }
+    div.csl-left-margin {
+      min-width:2em;
+      float:left;
+    }
+    div.csl-right-inline {
+      margin-left:2em;
+      padding-left:1em;
+    }
+    div.csl-indent {
+      margin-left: 2em;
+    }
+  </style>
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Monads are machines: an intuitive introduction to monads</h1>
+<p class="author">Seno</p>
+<p class="date">November, 2021</p>
+</header>
+<table style="width:96%;">
+<colgroup>
+<col style="width: 95%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;"><strong>WARNING!!!</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">What follows is full of vague statements meant to COMPLEMENT the actual formal notions with some intuition, hence improving understatement. These statements ARE NOT what the concepts are in a strict sense and should not be used in any serious argument. The readers MUST be comfortable with ill-defined notions appealing to their subjective experience of the world, as well as keep pedantic comments to themselves.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>REQUISITES:</strong></p>
+<ul>
+<li>Formally speaking, the reader must know only some basic Haskell, including classes and type and data constructors. Of course, having some experience helps.</li>
+<li>I does not depends on any earlier knowledge of <code>Functor</code> nor <code>Applicative</code>.</li>
+</ul>
+<h1 id="introduction">Introduction</h1>
+<p>There are plenty of tutorials on monads out there. Yet, we were frustrated trying to follow most of them. There are two reasons for that:</p>
+<ol type="1">
+<li><p>Some tutorials follow a philosophy very common in mathematics and computer science: things are what they are in a very formal sense and, <em>therefore</em>, that is all that should be presented. Though we agree with the first first part of the sentence, we disagree with the second. Things are defined and used formally, but there are intents and intuitions that go beyond the formal part, and not presenting those can be very prejudicial to the understatement of concept. Of course, intents and intuitions are very subjective and plural by nature, which make things a bit complicated.</p></li>
+<li><p>Other tutorials present some intuition, but a very deficient one. Some present monads as “containers,” but this is too vague since functors in general can be seen as containers. Other tutorials say that monads are things to “sequence computations,” which is something that happens in naturally in imperative languages but not in functional ones. Again, this does capture the full notion of monad, and is hardly reflected in its definition.</p></li>
+</ol>
+<p>This problems made us look to the original papers that introduced monads in computer science (mathematicians were considering them in different areas since the 1950s, but we didn’t go so far). The first paper to cite them explicitly in computer science was written by Moggi, first published in 1989 and then expanded in 1991 <span class="citation" data-cites="Mog89">[1]</span>. But not only this is a rather technical paper we couldn’t read, it did not introduced monads as a programming tool: they were introduced as a tool to analyse lambda calculus. Nevertheless, the ideas to use them for programming were latent, as showed by Waddler in 1990 <span class="citation" data-cites="Wad90">[2]</span>, already using Haskell as the programming language to exemplify it. Waddler also wrote a second paper with a different approach to introduce monads to programmers in 1992 <span class="citation" data-cites="Wad92">[3]</span>. What follows is pretty much inspired by <span class="citation" data-cites="Wad92">[3]</span>, but simplified and adapted to the way Haskell is written now-a-days.</p>
+<p>Both <span class="citation" data-cites="Mog89">[1]</span> and <span class="citation" data-cites="Wad92">[3]</span> use the vague word “computations” to describe what monads are at an intuitive level. We merged this idea with the so common “container” metaphor to make up our own metaphor: <a href="#monads-as-machines">machines</a>. We are not saying it is original, only that we didn’t see it before this way. And this metaphor seems to work so well, including as a way to motivate the <a href="#monad-laws">monad laws</a>, that we decided to write this tutorial. Hopefully, this will be a good way for you to understand monads too!</p>
+<p>Before going to the actual text, it is worth to say that there are two ways that monads are usually introduced:</p>
+<ol type="1">
+<li>Using the functions <code>return</code> and <code>bind</code>;</li>
+<li>Or using the functions <code>return</code>, <code>join</code> and <code>fmap</code>.</li>
+</ol>
+<p>The first approach involves less functions and laws, and it is closer to what is used in day-by-day programming. This is the one modern day Haskell uses, and is the one used in <span class="citation" data-cites="Wad92">[3]</span>.</p>
+<p>The second approach is the most commonly used in pure mathematics, and was the one used in <span class="citation" data-cites="Mog89">[1]</span> and <span class="citation" data-cites="Wad90">[2]</span>. <em>We decided to use this approach here.</em> This is because the machine metaphor seems more intuitive following it. This is not a big deal and we go back to the Haskell’s way <a href="#def-with-bind">shortly after</a>. We also show how to translate between the two approaches.</p>
+<p>Finally, we start with an excerpt from the introduction of <span class="citation" data-cites="Wad92">[3]</span>:</p>
+<blockquote>
+<p>Say I write an interpreter in a pure functional language.</p>
+<p>To add <a href="#machine-error">error handling</a> to it, I need to modify the result type to include error values, and at each recursive call to check for and handle errors appropriately. Had I used an impure language with exceptions, no such restructuring would be needed.</p>
+<p>To add an <a href="#machine-count">execution count</a> to it, I need to modify the the result type to include such a count, and modify each recursive call to pass around such counts appropriately. Had I used an impure language with a global variable that could be incremented, no such restructuring would be needed.</p>
+<p>To add an <a href="#machine-output">output instruction</a> to it, I need to modify the result type to include an output list, and to modify each recursive call to pass around this list appropriately. Had I used an impure language that performed output as a side effect, no such restructuring would be needed.</p>
+<p>Or I could use a <em>monad</em>.</p>
+</blockquote>
+<h1 id="the-abstract-notion-of-monad">The Abstract Notion of Monad</h1>
+<p>We will now introduce monads both formally and informally.</p>
+<p>We believe many readers tried to understand monads before and, hence, know a couple of examples. Well, it is better to keep these previously know examples at bay for now, so they don’t mess up with the intuitions we are trying to build up in this section. Most of all, we urge the reader to <strong>forget about the list monad</strong>, since it is a common example that seems very unrelated at first. We will come <a href="#list-monad">get back to it</a>, so just hang in there.</p>
+<h2 id="monads-as-machines">The <code>Machine</code> class</h2>
+<p>As we said above, we chose to differ from the usual way that Haskell does, because we believe this other approach makes it easier to understand. To not mess things up and redefine the <code>Monad</code> class, and also to reinforce our metaphor, we will define a new class called <code>Machine</code>. The functions in this class already exist in Haskell, so we will add an “M” to their names to avoid conflicts.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> <span class="dt">Machine</span> m <span class="kw">where</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ot">  returnM ::</span> a <span class="ot">-&gt;</span>  m a</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ot">  joinM ::</span> m (m a) <span class="ot">-&gt;</span> m a</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="ot">  fmapM ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> m a <span class="ot">-&gt;</span> m b</span></code></pre></div>
+<p>Okay, let’s dissect this.</p>
+<p>First, a machine <code>m</code> is a type constructor with kind <code>* -&gt; *</code>, meaning that it takes a type as input and produces a new type. While, for instance, an <code>Integer</code> is what Haskell considers to be an integer, an <code>m Integer</code> is what <em>the machine</em> <code>m</code> considers an integer. We can think that an <code>m Integer</code> is an integer written in machine code. Of course, we could have used any type <code>a</code> instead of <code>Integer</code> and created the type <code>m a</code> of “machine codes that symbolize values of type <code>a</code>.” To distinguish from the usual Haskell values, we say that values with type <code>m a</code> are <em>monadic values</em>.</p>
+<p>Coming back to the <code>Integer</code> case for illustration, it is worth mentioning Machines can be far more lenient with out they accept as an integer than Haskell is. In Haskell, an <code>Integer</code> is a constant integer, like the number <code>2</code>. For a machine, well, an integer could be “a number that changes according to what is being computed,” or “something that we expected to be an integer, but it became an error message” or even “an integer that will be typed by the user while the machine is running.” In general, elements with type <code>Integer</code> are static while elements with type <code>m Integer</code> can be seem as dynamic. Because of this, monadic values are also frequently referred to as <em>monadic actions</em>.</p>
+<p>Now let’s go for the functions in the <code>Machine</code> class.</p>
+<p>The function <code>returnM</code> puts an element inside the machine. It can also be thought as translating a value in Haskell to the same value but written in machine code, e.g., if we take <code>2 :: Integer</code>, then <code>returnM 2 :: m Integer</code> is the way the machine represents the integer <code>2</code>. By what we said above, there is no hope that every element of type <code>m a</code> is obtained by “returning” an element of type <code>a</code>. We can think about <code>returnM</code> as constructing the “most basic” monadic values; in other words, <code>returnM (2 :: Integer)</code> can be interpreted as “the most basic representation the machine can have for the integer 2,” or “the pure integer 2” or even “the integer that is constant and equal to 2.”</p>
+<p>One of the most interesting aspects of any machine is it ability to “emulate itself.” As we said above, for any type <code>a</code>, we can construct the type <code>m a</code>. In particular, we can construct the type <code>m (m a)</code>. What does that mean? Well, if <code>m a</code> is a machine code representing something with value <code>a</code>, then <code>m (m a)</code> is a machine code representing a machine code. Of course, this is redundant, and that is why we have the map <code>joinM :: m (m a) -&gt; m a</code>. One way to think about it is that an element with type <code>m (m a)</code> is a some code with type <code>m a</code> that is already in the memory of the machine, and what <code>joinM</code> does is use the machine to <em>run this code</em> to get something with type <code>a</code> instead.</p>
+<p>Finally, we have the <code>fmapM</code> function. This used to translate regular Haskell functions so they can be used to handle machine code: given a function <code>f</code> with signature <code>a -&gt; b</code>, we construct the corresponding function that transform machine codes representing values of type <code>a</code> to machine codes representing values of type <code>b</code>. To exemplify, let us think about the function <code>f = (+ 1) :: Integer -&gt; Integer</code> and let us say we have a monadic value that represents “an integer that will be typed by the user while the machine is running,” as we said above. Then, <code>fmapM f</code> applied to this value is a new monadic value that represents “first read the element that the user types, and then add <code>1</code> to it.” Note that, in most imperative languages, both monadic values just cited would be <em>functions</em>, but in Haskell this is <em>not</em>. Their type is <code>m Integer</code>, so we reason about then as integers!</p>
+<p>Having said all that, there are also laws that we want the functions in the <code>Machine</code> class to follow. For example, one would expect that if we have a value <code>x</code> with type <code>m a</code> for some <code>a</code>, then <code>join (return x) = x</code> (in other words, that if we take something already in machine code and simply write it in machine code again, well, the machine can ignore this second layer). As another example, now for any value <code>x :: a</code> and any function <code>f :: a -&gt; b</code> , one would expect that <code>fmap f (return x)</code> should be the same as <code>return (f x)</code> (performing a computation out of the machine, if possible, is compatible with performing it inside). We will postpone listing all the laws for another moment, to avoid losing our focus (see <a href="http://xenon.stanford.edu/~hwatheod/monads.html">this link</a> for now).</p>
+<h2 id="bind">Monadic functions and bind</h2>
+<p>Now we will discuss the most common pattern used to program with monads.</p>
+<p>We first define a function that <em>constructs</em> monadic values from regular ones. In other words, it has a signature that looks like <code>a -&gt; m b</code> or <code>a -&gt; b -&gt; m c</code>. Functions like that are called <em>monadic functions</em>. (Formally speaking, we can define a <em>monadic function signature</em> to be any type <code>a -&gt; x</code> where x is either of the form <code>m b</code> or it is, recursively, a monadic function signature.)</p>
+<p>To define such a function, we do not need to know how to interpret a code with type <code>m a</code> as an element with type <code>a</code>. This is something that happens (if it end up happening) inside the machine. All that is need to define a monadic function is how to <em>program the machine</em>, so to have a new element in machine code in the end. Maybe this will be done by using <code>returnM</code>, maybe it will be done by using some specific tool we have for this particular machine.</p>
+<p>Once we have our monadic function defined, we want to pass to it a monadic value and not a regular one. This is because typically it we want to pass something that was compute by the machine before. But how can we do that?</p>
+<p>Okay, so let’s say we have a monadic value <code>m_a</code> of type <code>m a</code> and want to pass it to the monadic function <code>f</code> of type <code>a -&gt; m b</code>. We can’t use <code>f</code> directly, but we can use <code>fmapM f</code>, which accepts parameters with type <code>m a</code>. The problem is that it will produce an element of type <code>m (m b)</code>. Well, this is not really a problem, since we can use <code>joinM</code> to interpret this last element as one with type <code>m b</code>. In other words, we used the following:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ot">bindM ::</span> (<span class="dt">Machine</span> m) <span class="ot">=&gt;</span> m a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> m b</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>bindM m_a f <span class="ot">=</span> joinM <span class="op">$</span> fmapM f m_a</span></code></pre></div>
+<p>We just defined the famous <em>bind</em>. It is so powerful that we could have used it and <code>returnM</code> to define <code>joinM</code> and <code>fmapM</code> instead of how we did. And, actually, that is the <a href="#def-with-bind">default way to define monads in Haskell</a>, and the default way to denote it is by <code>&gt;&gt;=</code>.</p>
+<p>The reader may have noticed that it has the value as first argument and the function as the second, not following the usual notation for function application, which has the function on the left and the value on the write. This is because, in general, our machine has computed the monadic value <em>before</em>, and then it passes it to <code>bindM</code>. The notation follows this becaus sequencing is something that is important for many machines. If you’d like, we can read <code>bindM</code> as “pass the value to the function” rather than “evaluate the function at the value.”</p>
+<h3 id="the-name-bind">The name “bind”</h3>
+<p>The name “bind” is a bit of a strange one. Why this name? “Binding” usually refers to saving a value in a variable, and this doesn’t seem to be what is happening.</p>
+<p>It turns out, there is something that looks like binding going on. To see that, let us talk about <code>let</code> briefly first.</p>
+<p>The <code>let</code> constructor is something that is used for binding, in the way we usually think about it: in <code>let x = a in expression</code>, what is done is saying that <code>x</code> represents the value of <code>a</code> every time it appears in <code>expression</code>. <!-- Or, in other words, we substitute `x` for `a` every time it appears in `expression`.  --> And this is the same thing as function application! What we do to compute <code>let x = a in expression</code> is, of course, the same as evaluating the function <code>(\x -&gt; expression)</code> on the value <code>a</code>.</p>
+<p>Well, when the function we pass to <code>bindM</code> was a lambda abstraction, then the similarity with this way of thinking about <code>let</code> becomes clear.</p>
+<p>Let us try to see with a simple example: suppose we have a double in machine code, i.e., an value <code>m_x</code> with type <code>m Double</code> and we want to pass it to the function <code>\x -&gt; return (x + 1)</code>, which has type <code>Double -&gt; m Double</code>. We do</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>m_x <span class="ot">`bindM`</span> (\x <span class="ot">-&gt;</span> returnM (x <span class="op">+</span> <span class="dv">1</span>))</span></code></pre></div>
+<p>which can be thought as “Let <code>x</code> be the integer encoded by <code>m_x</code>. Add <code>1</code> to <code>x</code> and return the result to the machine.”</p>
+<p>Of course, this is a very strange strange to think, since it is not what is actually happening. The monadic value <code>m_x</code> may not encode a Haskell integer to save in the variable <code>x</code>. We said what is actually happening in the <a href="#bind">last subsection</a>. What we are saying now is that we can <em>pretend</em> this is what is happening.</p>
+<p>An useful analogy is like we use the number π in symbolic calculations in a math course. We can write expressions like <code>7 * π  + π^131</code> and say this is its precise value of the real number, but when we want a <em>decimal approximation</em> of this expression we need to change all occurrences of π to an <em>decimal approximation</em> of π. In this analogy, the regular values are “real numbers” and the machine code representations are their “decimal approximations.”</p>
+<p>Let’s do another example, that is something that we will use in the <a href="#def-with-bind">next section</a>. We will define the function <code>apM</code>, which corresponds to the function <code>ap</code> in <code>Control.Monad</code>. This function receives an “encoded” function <code>m_f</code> and an “encoded” value <code>m_x</code> and gives us the “machine code” of the value we would get by applying the function to the value:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ot">apM ::</span> (<span class="dt">Machine</span> m) <span class="ot">=&gt;</span> m (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> m a <span class="ot">-&gt;</span> m b</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>apM m_f m_x <span class="ot">=</span> m_f <span class="ot">`bindM`</span> (\f <span class="ot">-&gt;</span> m_x <span class="ot">`bindM`</span> (\x <span class="ot">-&gt;</span> returnM (f x)))</span></code></pre></div>
+<p>Again, this can be read as “Let <code>f</code> be the function encoded by <code>m_f</code>. Then let <code>x</code> be the value encoded by <code>m_x</code>. Then compute <code>f x</code> and return the resulting value to the machine.”</p>
+<h2 id="def-with-bind">Back to reality: how Haskell do it</h2>
+<p>The moment to translate <code>Machine</code> to the way that the <code>Monad</code> class currently defined in Haskell has finally arrived! It has some layers: for a type constructor to have an instance of <code>Monad</code>, it needs an instance of <code>Applicative</code>, which in turn needs an instance of <code>Functor</code>.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Machine</span> m <span class="ot">=&gt;</span> <span class="dt">Functor</span> m <span class="kw">where</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fmap</span> <span class="ot">=</span> fmapM</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Machine</span> m <span class="ot">=&gt;</span> <span class="dt">Applicative</span> m <span class="kw">where</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pure</span> <span class="ot">=</span> returnM</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  (<span class="op">&lt;*&gt;</span>) <span class="ot">=</span> apM</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Machine</span> m <span class="ot">=&gt;</span> <span class="dt">Monad</span> m <span class="kw">where</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span> <span class="ot">=</span> returnM</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  (<span class="op">&gt;&gt;=</span>) <span class="ot">=</span> bindM</span></code></pre></div>
+<p>The reverse:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> <span class="dt">Machine</span> m <span class="kw">where</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  returnM <span class="ot">=</span> <span class="fu">return</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  joinM (mm_x) <span class="ot">=</span> mm_x <span class="op">&gt;&gt;=</span> <span class="fu">id</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  fmapM f m_x <span class="ot">=</span> m_x <span class="op">&gt;&gt;=</span> (\x <span class="ot">-&gt;</span> <span class="fu">return</span> (f x))</span></code></pre></div>
+<h1 id="concrete-examples">Concrete examples</h1>
+<p>This is call-by-value, for a call-by-name, see <span class="citation" data-cites="Wad92">[3, Subsection 2.9]</span>.</p>
+<p>To avoid confusing technicalities, we will assume we have a constant monad <code>M</code>, that we will choose which of the monads we will present below by commenting/uncommenting the obvious lines of code.</p>
+<h2 id="representing-our-lambda-calculus-in-haskell">Representing our lambda calculus in Haskell</h2>
+<h3 id="types">Types</h3>
+<p>The <code>Name</code> type consists of the names we can give to our variables.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Name</span> <span class="ot">=</span> <span class="dt">String</span></span></code></pre></div>
+<p>The terms of our simple lambda-calculus are constructed from Ints or free variables by using addition or lambda-abstraction.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Term</span> <span class="ot">=</span> <span class="dt">Con</span> <span class="dt">Int</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>          <span class="op">|</span> <span class="dt">Var</span> <span class="dt">Name</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>          <span class="op">|</span> <span class="dt">Add</span> <span class="dt">Term</span> <span class="dt">Term</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>          <span class="op">|</span> <span class="dt">Lam</span> <span class="dt">Name</span> <span class="dt">Term</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>          <span class="op">|</span> <span class="dt">App</span> <span class="dt">Term</span> <span class="dt">Term</span></span></code></pre></div>
+<p>Each term is interpreted into a <code>Value</code> by a machine (monad) <code>m</code>. Note that lambda-terms are interpreted as monadic functions <code>Value -&gt; M Value</code> and not as functions <code>Value -&gt; Value</code>. This is so we can use these functions to interact with the “machine” using bind.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Value</span> <span class="ot">=</span> <span class="dt">Wrong</span> </span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>           <span class="op">|</span> <span class="dt">Num</span> <span class="dt">Int</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>           <span class="op">|</span> <span class="dt">Fun</span> (<span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">M</span> <span class="dt">Value</span>)</span></code></pre></div>
+<p>If we have free variables, we need to bind them to values before evaluating the term. So we have a type to register this binding:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Environment</span> <span class="ot">=</span> [(<span class="dt">Name</span>, <span class="dt">Value</span>)]</span></code></pre></div>
+<h3 id="instance-of-show">Instance of Show</h3>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Show</span> <span class="dt">Value</span> <span class="kw">where</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">show</span> <span class="dt">Wrong</span>   <span class="ot">=</span> <span class="st">&quot;&lt;wrong&gt;&quot;</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">show</span> (<span class="dt">Num</span> i) <span class="ot">=</span> <span class="fu">show</span> i</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">show</span> (<span class="dt">Fun</span> f) <span class="ot">=</span> <span class="st">&quot;&lt;function&gt;&quot;</span></span></code></pre></div>
+<h3 id="functions-defining-the-interpreter">Functions defining the interpreter</h3>
+<p>It is convenient to use only monadic functions, even though we don’t need all functions to be monadic.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">lookup</span><span class="ot"> ::</span> <span class="dt">Name</span> <span class="ot">-&gt;</span> <span class="dt">Environment</span> <span class="ot">-&gt;</span> <span class="dt">M</span> <span class="dt">Value</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">lookup</span> x []        <span class="ot">=</span> <span class="fu">return</span> <span class="dt">Wrong</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">lookup</span> x ((y,b)<span class="op">:</span>e) <span class="ot">=</span> <span class="kw">if</span> x<span class="op">==</span>y</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>                      <span class="kw">then</span> <span class="fu">return</span> b</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>                      <span class="kw">else</span> <span class="fu">lookup</span> x e</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="ot">add ::</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">M</span> <span class="dt">Value</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>add (<span class="dt">Num</span> i) (<span class="dt">Num</span> j) <span class="ot">=</span> <span class="fu">return</span> <span class="op">$</span> <span class="dt">Num</span> (i<span class="op">+</span>j)</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>add _ _ <span class="ot">=</span> <span class="fu">return</span> <span class="dt">Wrong</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="ot">apply ::</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">M</span> <span class="dt">Value</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>apply (<span class="dt">Fun</span> f) a <span class="ot">=</span> f a</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>apply _ _ <span class="ot">=</span> <span class="fu">return</span> <span class="dt">Wrong</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a><span class="ot">interp ::</span> <span class="dt">Term</span> <span class="ot">-&gt;</span> <span class="dt">Environment</span> <span class="ot">-&gt;</span> <span class="dt">M</span> <span class="dt">Value</span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>interp (<span class="dt">Con</span> i) e <span class="ot">=</span> <span class="fu">return</span> (<span class="dt">Num</span> i)</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>interp (<span class="dt">Var</span> x) e <span class="ot">=</span> <span class="fu">lookup</span> x e</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>interp (<span class="dt">Add</span> u v) e <span class="ot">=</span> interp u e <span class="op">&gt;&gt;=</span> (\a <span class="ot">-&gt;</span> interp v e <span class="op">&gt;&gt;=</span> (\b <span class="ot">-&gt;</span> add a b))</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>interp (<span class="dt">Lam</span> x v) e <span class="ot">=</span> <span class="fu">return</span> (<span class="dt">Fun</span> (\a <span class="ot">-&gt;</span> interp v ((x,a)<span class="op">:</span>e)))</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>interp (<span class="dt">App</span> t u) e <span class="ot">=</span> interp t e <span class="op">&gt;&gt;=</span> (\f <span class="ot">-&gt;</span> interp u e <span class="op">&gt;&gt;=</span> (\a <span class="ot">-&gt;</span> apply f a))</span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a><span class="ot">test ::</span> <span class="dt">Term</span> <span class="ot">-&gt;</span> <span class="dt">String</span></span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>test t <span class="ot">=</span> <span class="fu">show</span> (interp t [])</span></code></pre></div>
+<h2 id="main-examples">Main examples</h2>
+<h3 id="machine-0-identity">Machine 0: Identity</h3>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">M</span> <span class="ot">=</span> <span class="dt">Id</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="kw">newtype</span> <span class="dt">Id</span> a <span class="ot">=</span> <span class="dt">Id</span> a</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Machine</span> <span class="dt">Id</span> <span class="kw">where</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>  returnM a <span class="ot">=</span> <span class="dt">Id</span> a</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>  joinM (<span class="dt">Id</span> (<span class="dt">Id</span> a)) <span class="ot">=</span> <span class="dt">Id</span> a</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>  fmapM f (<span class="dt">Id</span> a) <span class="ot">=</span> <span class="dt">Id</span> (f a)</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Show</span> a <span class="ot">=&gt;</span> <span class="dt">Show</span> (<span class="dt">Id</span> a) <span class="kw">where</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">show</span> (<span class="dt">Id</span> a) <span class="ot">=</span> <span class="fu">show</span> a</span></code></pre></div>
+<h3 id="machine-errors">Machine 1: Error Messages</h3>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- type M = E</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">E</span> a <span class="ot">=</span> <span class="dt">Error</span> <span class="dt">String</span> <span class="op">|</span> <span class="dt">Success</span> a </span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Machine</span> <span class="dt">E</span> <span class="kw">where</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="ot">  returnM ::</span> a <span class="ot">-&gt;</span> <span class="dt">E</span> a</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>  returnM a <span class="ot">=</span> <span class="dt">Success</span> a</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="ot">  joinM ::</span> <span class="dt">E</span> (<span class="dt">E</span> a) <span class="ot">-&gt;</span> <span class="dt">E</span> a</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>  joinM (<span class="dt">Success</span> (<span class="dt">Success</span> a)) <span class="ot">=</span> <span class="dt">Success</span> a</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>  joinM (<span class="dt">Success</span> (<span class="dt">Error</span> msg)) <span class="ot">=</span> <span class="dt">Error</span> msg</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>  joinM (<span class="dt">Error</span> msg)           <span class="ot">=</span> <span class="dt">Error</span> msg</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="ot">  fmapM ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">E</span> a <span class="ot">-&gt;</span> <span class="dt">E</span> b</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>  fmapM f (<span class="dt">Success</span> a) <span class="ot">=</span> <span class="dt">Success</span> (f a)</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>  fmapM f (<span class="dt">Error</span> msg) <span class="ot">=</span> <span class="dt">Error</span> msg</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Show</span> a <span class="ot">=&gt;</span> <span class="dt">Show</span> (<span class="dt">E</span> a) <span class="kw">where</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">show</span> (<span class="dt">Success</span> a) <span class="ot">=</span> <span class="fu">show</span> a</span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">show</span> (<span class="dt">Error</span> msg) <span class="ot">=</span> <span class="st">&quot;ERROR! &quot;</span> <span class="op">++</span> msg</span></code></pre></div>
+<p>Changes to the interpreter:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">lookup</span> x [] <span class="ot">=</span> errorE (<span class="st">&quot;Unbound variable: &quot;</span> <span class="op">++</span> x)</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>add a b <span class="ot">=</span> errorE (<span class="st">&quot;Should be numbers: &quot;</span> <span class="op">++</span> <span class="fu">show</span> a <span class="op">++</span> <span class="st">&quot;,&quot;</span> <span class="op">++</span> <span class="fu">show</span> b)</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>apply f a <span class="ot">=</span> errorE (<span class="st">&quot;Should be a function: &quot;</span> <span class="op">++</span> <span class="fu">show</span> f)</span></code></pre></div>
+<h3 id="machine-count">Machine 2: State</h3>
+<p>Our next machine has a changing state that influence and is influenced by the computations. Perhaps this is the most fundamental example.</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">newtype</span> <span class="dt">StateMachine</span> state a <span class="ot">=</span> <span class="dt">SM</span> (state <span class="ot">-&gt;</span> (a, state))</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Machine</span> (<span class="dt">StateMachine</span> state) <span class="kw">where</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="ot">  returnM ::</span> a <span class="ot">-&gt;</span> <span class="dt">StateMachine</span> state a</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>  returnM a <span class="ot">=</span> <span class="dt">SM</span> <span class="op">$</span> \s <span class="ot">-&gt;</span> (a, s)</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="ot">  joinM ::</span> <span class="dt">StateMachine</span> state (<span class="dt">StateMachine</span> state a) <span class="ot">-&gt;</span> <span class="dt">StateMachine</span> state a</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>  joinM (<span class="dt">SM</span> metaMachine) <span class="ot">=</span> <span class="dt">SM</span> newMachine</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">where</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>      newMachine s0 <span class="ot">=</span> <span class="kw">let</span> (<span class="dt">SM</span> machine, s1) <span class="ot">=</span> metaMachine s0 <span class="kw">in</span> machine s1</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a><span class="ot">  fmapM ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">StateMachine</span> state a <span class="ot">-&gt;</span> <span class="dt">StateMachine</span> state b</span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>  fmapM f (<span class="dt">SM</span> machine) <span class="ot">=</span> <span class="dt">SM</span> newMachine</span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">where</span></span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>      newMachine s0 <span class="ot">=</span> <span class="kw">let</span> (a, s1) <span class="ot">=</span> machine s0 <span class="kw">in</span> (f a, s1)</span></code></pre></div>
+<p>For our interpreter, we will use as state an <code>Int</code> that counts how man times function is applied or an addition is performed. To this end, we will need the following piece of machinery:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ot">tick ::</span> <span class="dt">StateMachine</span> <span class="dt">Int</span> ()</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>tick <span class="ot">=</span> <span class="dt">SM</span> <span class="op">$</span> \s <span class="ot">-&gt;</span> ((), s<span class="op">+</span><span class="dv">1</span>)</span></code></pre></div>
+<p>The typing of <code>tick</code> makes clear that the value returned is not of interest. It is analogous to the use in an impure language of a function that returns nothing, indicating that the purpose of the function lies in a side effect.</p>
+<p>Then, we add the following changes in our interpreter:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>apply (<span class="dt">Fun</span> f) a <span class="ot">=</span> tick <span class="op">&gt;&gt;=</span> (\() <span class="ot">-&gt;</span> f a)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>add (<span class="dt">Num</span> i) (<span class="dt">Num</span> j) <span class="ot">=</span> tick <span class="op">&gt;&gt;=</span> (\() <span class="ot">-&gt;</span> <span class="fu">return</span> (<span class="dt">Num</span> (i<span class="op">+</span>j)))</span></code></pre></div>
+<p>Finally, we only define an instance of <code>Show</code> for the case <code>state</code> is <code>Int</code> (this definition relies in the <code>FlexibleInstances</code> addon):</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Show</span> a <span class="ot">=&gt;</span> <span class="dt">Show</span> (<span class="dt">StateMachine</span> <span class="dt">Int</span> a) <span class="kw">where</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">show</span> (<span class="dt">SM</span> machine) <span class="ot">=</span> <span class="kw">let</span> (a, s1) <span class="ot">=</span> machine <span class="dv">0</span> <span class="kw">in</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>                      <span class="st">&quot;Value: &quot;</span> <span class="op">++</span> <span class="fu">show</span> a <span class="op">++</span> <span class="st">&quot;; &quot;</span> <span class="op">++</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>                      <span class="st">&quot;Count: &quot;</span> <span class="op">++</span> <span class="fu">show</span> s1</span></code></pre></div>
+<p>Now <code>test term0</code> evaluates to <code>"Value: 42; Count: 3"</code>.</p>
+<h4 id="variation">Variation</h4>
+<p>An interesting variation of our lambda calculus is to be able to refer to hidden state. For this we need to modify our <code>Term</code> definition by adding the <code>Count</code> data constructor:</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Term</span> <span class="ot">=</span> <span class="op">...</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>          <span class="op">|</span> <span class="dt">Count</span></span></code></pre></div>
+<p>To read the current state, we use the following:</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ot">fetch ::</span> <span class="dt">StateMachine</span> state state</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>fetch <span class="ot">=</span> <span class="dt">SM</span> machine</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    machine s <span class="ot">=</span> (s, s)</span></code></pre></div>
+<p>Finally, we add the following line to <code>interp</code>:</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>interp <span class="dt">Count</span> e <span class="ot">=</span> fetch <span class="op">&gt;&gt;=</span> (\i <span class="ot">-&gt;</span> <span class="fu">return</span> (<span class="dt">Num</span> i))</span></code></pre></div>
+<p>Then the term <code>Add (Add (Con 1) (Con 2)) Count</code> will evaluate to 4.</p>
+<h3 id="machine-example">Machine 3: Output</h3>
+<h3 id="list-monad">Machine 4: Non-deterministic choice</h3>
+<h2 id="more-examples">More examples</h2>
+<h3 id="machine-5-errors-with-position">Machine 5: Errors with position</h3>
+<h3 id="machine-6-reverse-state">Machine 6: Reverse State</h3>
+<h1 id="monad-laws">The monad laws</h1>
+<h2 id="with-return-join-and-fmap">With <code>return</code>, <code>join</code> and <code>fmap</code></h2>
+<h2 class="unnumbered" id="with-bind-monad-composition">With <code>bind</code>; Monad composition</h2>
+<div id="refs" class="references csl-bib-body" role="doc-bibliography">
+<div id="ref-Mog89" class="csl-entry" role="doc-biblioentry">
+<div class="csl-left-margin">1. </div><div class="csl-right-inline">Moggi, E.: Notions of computation and monads (Selections from 1989 IEEE Symposium on Logic in Computer Science). Information and Computation. 93, 55–92 (1991)</div>
+</div>
+<div id="ref-Wad90" class="csl-entry" role="doc-biblioentry">
+<div class="csl-left-margin">2. </div><div class="csl-right-inline">Wadler, P.: Comprehending monads. In: Proceedings of the 1990 ACM conference on LISP and functional programming. pp. 61–78 (1990)</div>
+</div>
+<div id="ref-Wad92" class="csl-entry" role="doc-biblioentry">
+<div class="csl-left-margin">3. </div><div class="csl-right-inline">Wadler, P.: The essence of functional programming. In: Proceedings of the 19th ACM SIGPLAN-SIGACT symposium on principles of programming languages. pp. 1–14 (1992)</div>
+</div>
+</div>
+</body>
+</html>
