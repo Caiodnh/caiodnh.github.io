@@ -75,7 +75,7 @@ Finally, Haskell functions can be used to handle machine code. Given a function 
 
 We will refer to a value with type `m a` as an *monadic value* for short. Something important that we need to say is that, in general, not every monadic value can be constructed using `returnM`. An element of type `m Integer`, for instance, is something that is a integer for the standards of the machine `m`. It could be something like "whatever integer is in this position of the memory when I read it," or "an integer that will be typed by the user," or "some computation that, if nothing goes wrong, will end up being an integer." We can think that the `returnM 2` means something like "the most basic representation the machine can have for the integer 2", or "the pure integer 2" or even "the constant integer 2."
 
-Having said all that, there are also laws that we want the functions in the `Machine` class to follow. For example, one would expect that if we have a value `x` with type `m a` for some `a` (these are called *monadic values*), then `join (return x) = x` (in other words, that if we take something already in machine code and simply write it in machine code again, well, the machine can ignore this second layer). As another example, now for any value `x :: a` and any function `f :: a -> b` , one would expect that `fmap f (return x)` should be the same as `return (f x)` (performing a computation out of the machine, if possible, is compatible with performing it inside). We will postpone listing all the laws for another moment, to avoid losing our focus (see [this link](http://xenon.stanford.edu/~hwatheod/monads.html) for now).
+Having said all that, there are also laws that we want the functions in the `Machine` class to follow. For example, one would expect that if we have a value `x` with type `m a` for some `a`, then `join (return x) = x` (in other words, that if we take something already in machine code and simply write it in machine code again, well, the machine can ignore this second layer). As another example, now for any value `x :: a` and any function `f :: a -> b` , one would expect that `fmap f (return x)` should be the same as `return (f x)` (performing a computation out of the machine, if possible, is compatible with performing it inside). We will postpone listing all the laws for another moment, to avoid losing our focus (see [this link](http://xenon.stanford.edu/~hwatheod/monads.html) for now).
 
 ## Monadic functions and bind
 
@@ -95,6 +95,8 @@ bindM m_val m_func = joinM (fmapM m_func m_val)
 This function is called *bind*. It is so powerful that we could have used it and `returnM` to define `joinM` and `fmapM` instead of how we did. Actually, that is the [default way in Haskell](#def-with-bind).
 
 By design, bind doesn't follow the usual function application notation, `f x`, with the function on the left and the value on the right. And, of course, there is a function in Haskell which follows the function application convention. But `bindM` is more common because it follows the order things usually happen: we have a value, then apply a function, get another value, pass it to another function, etc. This sequencing is something that agrees with the way many "machines" actually work.
+
+### The name "bind"
 
 Another strange thing is this name "bind". The intuition is that, although we can't read the internal value an `m a`, we can "bind its value" to the variable that we pass to the function `a -> m b`. To explain it better, let us "translate" two examples into words.
 
@@ -184,10 +186,12 @@ type Environment = [(Name, Value)]
 
 ### Instance of Show
 
+```haskell
 instance Show Value where
   show Wrong   = "<wrong>"
   show (Num i) = show i
   show (Fun f) = "<function>"
+```
 
 ### Functions defining the interpreter
 

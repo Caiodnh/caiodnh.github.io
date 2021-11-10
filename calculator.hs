@@ -30,100 +30,33 @@ instance Machine m => Monad m where
   return = returnM
   (>>=) = bindM
 
--- # Lambda Calculus
+-- # Expressions
 
 -- ## Choices for machine M
 
--- type M = Id
+type M = Id
 -- type M = E
-type M = StateMachine Int
+-- type M = StateMachine Int
 
 -- ## Types
 
-type Name = String
-
-data Term = Con Int
-          | Var Name
-          | Add Term Term
-          | Lam Name Term
-          | App Term Term
--- Add for variation of Machine 2:
-        --  | Count
-
-data Value = Wrong 
-           | Num Int
-           | Fun (Value -> M Value)
-
-type Environment = [(Name, Value)]
-
--- ## Examples of terms
-
--- term0 is (\x -> x + x) (10 + 11)
-term0 :: Term
-term0 = App (Lam "x" (Add (Var "x") (Var "x"))) (Add (Con 10) (Con 11))
-
--- term1
-term1 :: Term
-term1 = App (Con 1) (Con 2)
-
--- term2 (for Machine 2)
--- term2 :: Term
--- term2 = Add (Add (Con 1) (Con 2)) Count
-
--- term3 (for Machine 3)
--- term3 :: Term
--- term3 = Add (Out (Con 41)) (Out (Con 1))
-
--- term4 (for Machine 4)
--- App (Lam "x" (Add (Var "x") (Var "x"))) (Amb (Con 1) (Con 2))
-
--- ## Instances
-instance Show Value where
-  show Wrong   = "<wrong>"
-  show (Num i) = show i
-  show (Fun f) = "<function>"
+data Expr = Num Double
+          | Add Expr Expr
+          | Mult Expr Expr
+-- Add for E
+          -- | Div Expr Expr
+          -- | Sqrt Expr
+-- Add for Reader
+          -- | Pi
+-- Add for State:
+          -- | Count
 
 -- ## Functions
 
-varToValue :: Name -> Environment -> M Value
-varToValue x []        = return Wrong
--- Change for Machine 1:
--- varToValue x [] = Error ("Unbound variable: " ++ x)
-varToValue x ((y,b):e) = if x==y
-                      then return b
-                      else varToValue x e
-
-add :: Value -> Value -> M Value
--- add (Num i) (Num j) = return $ Num (i+j)
--- Change for Machine 2:
-add (Num i) (Num j) = tick >>= (\() -> return (Num (i+j)))
-add _ _ = return Wrong
--- ### Change for Machine 1
--- add a b = Error ("Should be numbers: " ++ show a ++ "," ++ show b)
-
-apply :: Value -> Value -> M Value
--- apply (Fun f) a = f a
--- Change for Machine 2:
-apply (Fun f) a = tick >>= (\() -> f a)
-apply _ _ = return Wrong
--- Changes for Machine 1:
--- apply f _ = Error ("Should be a function: " ++ show f)
-
-interp :: Term -> Environment -> M Value
-interp (Con i) e = return (Num i)
-interp (Var x) e = varToValue x e
-interp (Add u v) e = interp u e >>=
-                      (\a -> interp v e >>=
-                        \b -> add a b)
-interp (Lam x v) e = return (Fun (\a -> interp v ((x,a):e)))
-interp (App t u) e = interp t e >>= (\f -> interp u e >>= \a -> apply f a)
--- Add for variation of Machine 2:
--- interp Count e = fetch >>= (\i -> return (Num i))
-
-
-test :: Term -> String
-test t = show (interp t [])
-
+eval :: Expr -> M Double 
+eval (Num d) = return d
+eval (Add a b) = eval a >>= \x -> eval b >>= \y -> return (x + y)
+eval (Mult a b) = eval a >>= \x -> eval b >>= \y -> return (x * y)
 -- # Machines
 
 -- ## Machine 0
@@ -191,5 +124,3 @@ fetch :: StateMachine state state
 fetch = SM machine
   where
     machine s = (s, s)
-
-
