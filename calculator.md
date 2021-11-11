@@ -125,9 +125,9 @@ m_x `bindM` (\x -> returnM (x + 1))
 ```
 which can be thought as "Let `x` be the integer encoded by `m_x`. Add `1` to `x` and return the result to the machine."
 
-Of course, this is a very strange strange to think, since it is not what is actually happening. The monadic value `m_x` may not encode a Haskell integer to save in the variable `x`. We said what is actually happening in the [last subsection](#bind). What we are saying now is that we can *pretend* this is what is happening.
+Of course, this is a very strange way to think, since it is not what is actually happening. The monadic value `m_x` may not encode a Haskell integer to save in the variable `x`. We said what is actually happening in the [last subsection](#bind). What we are saying now is that we can *pretend* this is what is happening.
 
-An useful analogy is like we use the number π in symbolic calculations in a math course. We can write expressions like `7 * π  + π^131` and say this is its precise value of the real number, but when we want a *decimal approximation* of this expression we need to change all occurrences of π to an *decimal approximation* of π. In this analogy, the regular values are "real numbers" and the machine code representations are their "decimal approximations."
+<!-- An useful analogy is like we use the number π in symbolic calculations in a math course. We can write expressions like `7 * π  + π^131` and say this is its precise value of the real number, but when we want a *decimal approximation* of this expression we need to change all occurrences of π to an *decimal approximation* of π. In this analogy, the regular values are "real numbers" and the machine code representations are their "decimal approximations." -->
 
 Let's do another example, that is something that we will use in the [next section](#def-with-bind). 
 We will define the function `apM`, which corresponds to the function `ap` in `Control.Monad`. 
@@ -164,89 +164,26 @@ instance Monad m => Machine m where
   fmapM f m_x = m_x >>= (\x -> return (f x))
 ``` 
 
-# Concrete examples
+# Examples
 
-This is call-by-value, for a call-by-name, see [@Wad92, Subsection 2.9].
+We will now present some examples of monads. We use them
 
 To avoid confusing technicalities, we will assume we have a constant monad `M`, that we will choose which of the monads we will present below by commenting/uncommenting the obvious lines of code.
 
-## Representing our lambda calculus in Haskell
-
-### Types
-
-The `Name` type consists of the names we can give to our variables.
-
 ```haskell
-type Name = String
-```
+data Expr = Num Double
+          | Add Expr Expr
+          | Mult Expr Expr
 
-The terms of our simple lambda-calculus are constructed from Ints or free variables by using addition or lambda-abstraction.
-
-```haskell
-data Term = Con Int
-          | Var Name
-          | Add Term Term
-          | Lam Name Term
-          | App Term Term
-```
-
-Each term is interpreted into a `Value` by a machine (monad) `m`.
-Note that lambda-terms are interpreted as monadic functions `Value -> M Value` and not as functions `Value -> Value`. This is so we can use these functions to interact with the "machine" using bind.
-
-```haskell
-data Value = Wrong 
-           | Num Int
-           | Fun (Value -> M Value)
-```
-
-If we have free variables, we need to bind them to values before evaluating the term. So we have a type to register this binding:
-
-```haskell
-type Environment = [(Name, Value)]
-```
-
-### Instance of Show
-
-```haskell
-instance Show Value where
-  show Wrong   = "<wrong>"
-  show (Num i) = show i
-  show (Fun f) = "<function>"
-```
-
-### Functions defining the interpreter
-
-It is convenient to use only monadic functions, even though we don't need all functions to be monadic.
-
-```haskell
-lookup :: Name -> Environment -> M Value
-lookup x []        = return Wrong
-lookup x ((y,b):e) = if x==y
-                      then return b
-                      else lookup x e
-
-add :: Value -> Value -> M Value
-add (Num i) (Num j) = return $ Num (i+j)
-add _ _ = return Wrong
-
-apply :: Value -> Value -> M Value
-apply (Fun f) a = f a
-apply _ _ = return Wrong
-
-interp :: Term -> Environment -> M Value
-interp (Con i) e = return (Num i)
-interp (Var x) e = lookup x e
-interp (Add u v) e = interp u e >>= (\a -> interp v e >>= (\b -> add a b))
-interp (Lam x v) e = return (Fun (\a -> interp v ((x,a):e)))
-interp (App t u) e = interp t e >>= (\f -> interp u e >>= (\a -> apply f a))
-
-test :: Term -> String
-test t = show (interp t [])
+eval :: Expr -> M Double
+eval (Num Double)       = return Double
+eval (Add expr1 expr2)  = eval expr1 >>= (\x -> eval expr2 >>= (\y -> return $ x + y))
+eval (Mult expr1 expr2) = eval expr1 >>= (\x -> eval expr2 >>= (\y -> return $ x * y))
 ```
 
 ## Main examples {#main-examples}
 
-### Machine 0: Identity
+### The trivial case: Identity Machine
 
 ```haskell
 type M = Id
@@ -262,7 +199,7 @@ instance Show a => Show (Id a) where
   show (Id a) = show a
 ```
 
-### Machine 1: Error Messages {#machine-errors}
+### Error Messages {#machine-errors}
 
 ```haskell
 -- type M = E
@@ -287,14 +224,58 @@ instance Show a => Show (E a) where
   show (Error msg) = "ERROR! " ++ msg
 ```
 
-Changes to the interpreter:
+Changes:
 ```haskell
-lookup x [] = errorE ("Unbound variable: " ++ x)
-add a b = errorE ("Should be numbers: " ++ show a ++ "," ++ show b)
-apply f a = errorE ("Should be a function: " ++ show f)
+data Expr = ...
+          | Div Expr Expr
+          | Sqrt Expr
+
+eval (Div expr1 expr2) = eval expr2 >>= \y ->
+                           if y == 0 then Error "Can't divide by zero"
+                           else eval expr1 >>= \x -> return $ x / y
+eval (Sqrt expr)       = eval expr >>= \x ->
+                           if x < 0 then Error "Can't take square root of negative numbers"
+                           else return $ sqrt x
 ```
 
-### Machine 2: State {#machine-count}
+### Global Constants
+
+Different approximations of π.
+
+Modification to data:
+
+```haskell
+  data Expr = ...
+            | Pi
+```
+How to do a machine? It must read the chosen approximation of π before computing.
+
+```haskell
+data Reader approx a = Reader (approx -> a)
+```
+
+In our example, `approx` is `Double`. The machine is `Reader approx`, not just `Reader`.
+
+```haskell
+instance Machine approx where
+  returnM a = Reader $ \x -> a
+  joinM (Reader metaFunc) = Reader newFunc
+    where
+      newFunc x = metaFunc x x
+  fmapM f (Reader func) = Reader newFunc
+    where
+      newFunc x = f (func x)
+```
+
+Note that fmapM is just composition.
+
+Changes to eval:
+
+```haskell
+eval Pi = Reader id
+```
+
+### State Machine {#machine-count}
 
 Our next machine has a changing state that influence and is influenced by the computations.
 Perhaps this is the most fundamental example.
@@ -330,8 +311,7 @@ It is analogous to the use in an impure language of a function that returns noth
 Then, we add the following changes in our interpreter:
 
 ```haskell
-apply (Fun f) a = tick >>= (\() -> f a)
-add (Num i) (Num j) = tick >>= (\() -> return (Num (i+j)))
+eval (Mult expr1 expr2) = tick >>= eval expr1 >>= (\x -> eval expr2 >>= (\y -> return $ x * y))
 ```
 
 Finally, we only define an instance of `Show` for the case `state` is `Int` (this definition relies in the `FlexibleInstances` addon):
@@ -341,9 +321,7 @@ instance Show a => Show (StateMachine Int a) where
   show (SM machine) = let (a, s1) = machine 0 in
                       "Value: " ++ show a ++ "; " ++
                       "Count: " ++ show s1
-```
-
-Now `test term0` evaluates to `"Value: 42; Count: 3"`.
+``` 
 
 #### Variation
 
