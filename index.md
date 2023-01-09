@@ -12,26 +12,18 @@ History of mathematics is also that is also present. I love to see how ideas dev
 
 ## Algebra
 
-- [Sturm's theorem](texts/Counting_real_roots_of_polynomials.pdf)
+- [Counting Real Roots of Polynomials](texts/Counting_real_roots_of_polynomials.pdf)
 
 ## Algorithm Analysis
 
-- [Union find](texts/Counting_real_roots_of_polynomials.pdf)
+- [Analysis of the Union-Find Algorithm](texts/Union_Find.pdf)
 
 ## Funcional Programming
 
-- [Monads as machines](texts/Counting_real_roots_of_polynomials.pdf)
-
-## Linear Algebra
-
-- A motivation for Diagonalization -- telegram 
+- [Monads as Machines](texts/monads_as_machines.html)
 
 ## Mathematical Optimization
 
 - [Duality](texts/Counting_real_roots_of_polynomials.pdf)
-- [KKT](texts/Counting_real_roots_of_polynomials.pdf)
 
-## Set theory
-
-- Ordinals and hydras (soon)
 
