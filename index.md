@@ -25,5 +25,5 @@ History of mathematics is also that is also present. I love to see how ideas dev
 ## Mathematical Optimization
 
 - [Duality](texts/Counting_real_roots_of_polynomials.pdf)
-
+- [Physical Interpretation of the KKT conditions](texts/KKT-Physics.pdf)
 
